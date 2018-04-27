@@ -186,16 +186,12 @@ class MyObject(object):
         self.value = value
 
 
-class ReusedSQLTestCase(ReusedPySparkTestCase):
-    @classmethod
-    def setUpClass(cls):
-        ReusedPySparkTestCase.setUpClass()
-        cls.spark = SparkSession(cls.sc)
-
-    @classmethod
-    def tearDownClass(cls):
-        ReusedPySparkTestCase.tearDownClass()
-        cls.spark.stop()
+class SQLTestUtils(object):
+    """
+    This util assumes the instance of this to have 'spark' attribute, having a spark session.
+    It is usually used with 'ReusedSQLTestCase' class but can be used if you feel sure the
+    the implementation of this class has 'spark' attribute.
+    """
 
     @contextmanager
     def sql_conf(self, pairs):
@@ -204,6 +200,7 @@ class ReusedSQLTestCase(ReusedPySparkTestCase):
         `value` to the configuration `key` and then restores it back when it exits.
         """
         assert isinstance(pairs, dict), "pairs should be a dictionary."
+        assert hasattr(self, "spark"), "it should have 'spark' attribute, having a spark session."
 
         keys = pairs.keys()
         new_values = pairs.values()
@@ -218,6 +215,18 @@ class ReusedSQLTestCase(ReusedPySparkTestCase):
                     self.spark.conf.unset(key)
                 else:
                     self.spark.conf.set(key, old_value)
+
+
+class ReusedSQLTestCase(ReusedPySparkTestCase, SQLTestUtils):
+    @classmethod
+    def setUpClass(cls):
+        ReusedPySparkTestCase.setUpClass()
+        cls.spark = SparkSession(cls.sc)
+
+    @classmethod
+    def tearDownClass(cls):
+        ReusedPySparkTestCase.tearDownClass()
+        cls.spark.stop()
 
     def assertPandasEqual(self, expected, result):
         msg = ("DataFrames are not equal: " +
@@ -3009,6 +3018,14 @@ class SQLTests(ReusedSQLTestCase):
             df.select(df.name).orderBy(functions.desc_nulls_last('name')).collect(),
             [Row(name=u'Tom'), Row(name=u'Alice'), Row(name=None)])
 
+    def test_json_sampling_ratio(self):
+        rdd = self.spark.sparkContext.range(0, 100, 1, 1) \
+            .map(lambda x: '{"a":0.1}' if x == 1 else '{"a":%s}' % str(x))
+        schema = self.spark.read.option('inferSchema', True) \
+            .option('samplingRatio', 0.5) \
+            .json(rdd).schema
+        self.assertEquals(schema, StructType([StructField("a", LongType(), True)]))
+
 
 class HiveSparkSubmitTests(SparkSubmitTests):
 
@@ -3066,6 +3083,69 @@ class SQLTests2(ReusedSQLTestCase):
             sc.stop()
 
 
+class QueryExecutionListenerTests(unittest.TestCase, SQLTestUtils):
+    # These tests are separate because it uses 'spark.sql.queryExecutionListeners' which is
+    # static and immutable. This can't be set or unset, for example, via `spark.conf`.
+
+    @classmethod
+    def setUpClass(cls):
+        import glob
+        from pyspark.find_spark_home import _find_spark_home
+
+        SPARK_HOME = _find_spark_home()
+        filename_pattern = (
+            "sql/core/target/scala-*/test-classes/org/apache/spark/sql/"
+            "TestQueryExecutionListener.class")
+        cls.has_listener = bool(glob.glob(os.path.join(SPARK_HOME, filename_pattern)))
+
+        if cls.has_listener:
+            # Note that 'spark.sql.queryExecutionListeners' is a static immutable configuration.
+            cls.spark = SparkSession.builder \
+                .master("local[4]") \
+                .appName(cls.__name__) \
+                .config(
+                    "spark.sql.queryExecutionListeners",
+                    "org.apache.spark.sql.TestQueryExecutionListener") \
+                .getOrCreate()
+
+    def setUp(self):
+        if not self.has_listener:
+            raise self.skipTest(
+                "'org.apache.spark.sql.TestQueryExecutionListener' is not "
+                "available. Will skip the related tests.")
+
+    @classmethod
+    def tearDownClass(cls):
+        if hasattr(cls, "spark"):
+            cls.spark.stop()
+
+    def tearDown(self):
+        self.spark._jvm.OnSuccessCall.clear()
+
+    def test_query_execution_listener_on_collect(self):
+        self.assertFalse(
+            self.spark._jvm.OnSuccessCall.isCalled(),
+            "The callback from the query execution listener should not be called before 'collect'")
+        self.spark.sql("SELECT * FROM range(1)").collect()
+        self.assertTrue(
+            self.spark._jvm.OnSuccessCall.isCalled(),
+            "The callback from the query execution listener should be called after 'collect'")
+
+    @unittest.skipIf(
+        not _have_pandas or not _have_pyarrow,
+        _pandas_requirement_message or _pyarrow_requirement_message)
+    def test_query_execution_listener_on_collect_with_arrow(self):
+        with self.sql_conf({"spark.sql.execution.arrow.enabled": True}):
+            self.assertFalse(
+                self.spark._jvm.OnSuccessCall.isCalled(),
+                "The callback from the query execution listener should not be "
+                "called before 'toPandas'")
+            self.spark.sql("SELECT * FROM range(1)").toPandas()
+            self.assertTrue(
+                self.spark._jvm.OnSuccessCall.isCalled(),
+                "The callback from the query execution listener should be called after 'toPandas'")
+
+
 class SparkSessionTests(PySparkTestCase):
 
     # This test is separate because it's closely related with session's start and stop.
@@ -3121,18 +3201,22 @@ class HiveContextSQLTests(ReusedPySparkTestCase):
     def setUpClass(cls):
         ReusedPySparkTestCase.setUpClass()
         cls.tempdir = tempfile.NamedTemporaryFile(delete=False)
+        cls.hive_available = True
         try:
             cls.sc._jvm.org.apache.hadoop.hive.conf.HiveConf()
         except py4j.protocol.Py4JError:
-            cls.tearDownClass()
-            raise unittest.SkipTest("Hive is not available")
+            cls.hive_available = False
         except TypeError:
-            cls.tearDownClass()
-            raise unittest.SkipTest("Hive is not available")
+            cls.hive_available = False
         os.unlink(cls.tempdir.name)
-        cls.spark = HiveContext._createForTesting(cls.sc)
-        cls.testData = [Row(key=i, value=str(i)) for i in range(100)]
-        cls.df = cls.sc.parallelize(cls.testData).toDF()
+        if cls.hive_available:
+            cls.spark = HiveContext._createForTesting(cls.sc)
+            cls.testData = [Row(key=i, value=str(i)) for i in range(100)]
+            cls.df = cls.sc.parallelize(cls.testData).toDF()
+
+    def setUp(self):
+        if not self.hive_available:
+            self.skipTest("Hive is not available.")
 
     @classmethod
     def tearDownClass(cls):
@@ -5241,6 +5325,6 @@ class GroupedAggPandasUDFTests(ReusedSQLTestCase):
 if __name__ == "__main__":
     from pyspark.sql.tests import *
     if xmlrunner:
-        unittest.main(testRunner=xmlrunner.XMLTestRunner(output='target/test-reports'))
+        unittest.main(testRunner=xmlrunner.XMLTestRunner(output='target/test-reports'), verbosity=2)
     else:
-        unittest.main()
+        unittest.main(verbosity=2)
