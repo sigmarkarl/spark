@@ -118,9 +118,9 @@ class ContinuousCoalesceRDD(
         }
       }
 
-      context.addTaskCompletionListener { ctx =>
+      /* context.addTaskCompletionListener { ctx =>
         threadPool.shutdownNow()
-      }
+      } */
 
       part.writersInitialized = true
 
