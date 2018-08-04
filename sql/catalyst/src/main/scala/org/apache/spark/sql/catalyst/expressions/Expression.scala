@@ -580,10 +580,10 @@ abstract class BinaryOperator extends BinaryExpression with ExpectsInputTypes {
     // First check whether left and right have the same type, then check if the type is acceptable.
     if (!left.dataType.sameType(right.dataType)) {
       TypeCheckResult.TypeCheckFailure(s"differing types in '$sql' " +
-        s"(${left.dataType.simpleString} and ${right.dataType.simpleString}).")
+        s"(${left.dataType.catalogString} and ${right.dataType.catalogString}).")
     } else if (!inputType.acceptsType(left.dataType)) {
       TypeCheckResult.TypeCheckFailure(s"'$sql' requires ${inputType.simpleString} type," +
-        s" not ${left.dataType.simpleString}")
+        s" not ${left.dataType.catalogString}")
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
@@ -709,13 +709,18 @@ trait ComplexTypeMergingExpression extends Expression {
   @transient
   lazy val inputTypesForMerging: Seq[DataType] = children.map(_.dataType)
 
-  override def dataType: DataType = {
+  def dataTypeCheck: Unit = {
     require(
       inputTypesForMerging.nonEmpty,
       "The collection of input data types must not be empty.")
     require(
       TypeCoercion.haveSameType(inputTypesForMerging),
-      "All input types must be the same except nullable, containsNull, valueContainsNull flags.")
+      "All input types must be the same except nullable, containsNull, valueContainsNull flags." +
+        s" The input types found are\n\t${inputTypesForMerging.mkString("\n\t")}")
+  }
+
+  override def dataType: DataType = {
+    dataTypeCheck
     inputTypesForMerging.reduceLeft(TypeCoercion.findCommonTypeDifferentOnlyInNullFlags(_, _).get)
   }
 }
