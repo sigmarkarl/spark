@@ -100,7 +100,7 @@ class SparkILoop(in0: Option[BufferedReader], out: JPrintWriter)
    * hack, but there isn't another hook available to us at this point.
    */
   override def createInterpreter(): Unit = {
-    super.createInterpreter()
+      super.createInterpreter()
     initializeSpark()
   }
 

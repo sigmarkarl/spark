@@ -106,9 +106,9 @@ class SparkILoop(in0: Option[BufferedReader], out: JPrintWriter)
    * sees any files, so that the Spark context is visible in those files. This is a bit of a
    * hack, but there isn't another hook available to us at this point.
    */
-  override def loadFiles(settings: Settings): Unit = {
+  def loadFiles(settings: Settings): Unit = {
     initializeSpark()
-    super.loadFiles(settings)
+    //super.loadFiles(settings)
   }
 
   override def resetCommand(line: String): Unit = {
