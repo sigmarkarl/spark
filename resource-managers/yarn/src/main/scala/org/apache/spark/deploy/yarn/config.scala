@@ -192,6 +192,12 @@ package object config {
     .toSequence
     .createWithDefault(Nil)
 
+  private[spark] val AM_FINAL_MSG_LIMIT = ConfigBuilder("spark.yarn.am.finalMessageLimit")
+    .doc("The limit size of final diagnostic message for our ApplicationMaster to unregister from" +
+      " the ResourceManager.")
+    .bytesConf(ByteUnit.BYTE)
+    .createWithDefaultString("1m")
+
   /* Client-mode AM configuration. */
 
   private[spark] val AM_CORES = ConfigBuilder("spark.yarn.am.cores")
@@ -338,5 +344,9 @@ package object config {
     ConfigBuilder("spark.yarn.blacklist.executor.launch.blacklisting.enabled")
       .booleanConf
       .createWithDefault(false)
+
+  private[yarn] val YARN_EXECUTOR_RESOURCE_TYPES_PREFIX = "spark.yarn.executor.resource."
+  private[yarn] val YARN_DRIVER_RESOURCE_TYPES_PREFIX = "spark.yarn.driver.resource."
+  private[yarn] val YARN_AM_RESOURCE_TYPES_PREFIX = "spark.yarn.am.resource."
 
 }

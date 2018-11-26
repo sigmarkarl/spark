@@ -203,19 +203,11 @@ class UnivocityParser(
     }
   }
 
-  private val doParse = if (requiredSchema.nonEmpty) {
-    (input: String) => convert(tokenizer.parseLine(input))
-  } else {
-    // If `columnPruning` enabled and partition attributes scanned only,
-    // `schema` gets empty.
-    (_: String) => InternalRow.empty
-  }
-
   /**
    * Parses a single CSV string and turns it into either one resulting row or no row (if the
    * the record is malformed).
    */
-  def parse(input: String): InternalRow = doParse(input)
+  def parse(input: String): InternalRow = convert(tokenizer.parseLine(input))
 
   private val getToken = if (options.columnPruning) {
     (tokens: Array[String], index: Int) => tokens(index)
@@ -224,7 +216,12 @@ class UnivocityParser(
   }
 
   private def convert(tokens: Array[String]): InternalRow = {
-    if (tokens.length != parsedSchema.length) {
+    if (tokens == null) {
+      throw BadRecordException(
+        () => getCurrentInput,
+        () => None,
+        new RuntimeException("Malformed CSV record"))
+    } else if (tokens.length != parsedSchema.length) {
       // If the number of tokens doesn't match the schema, we should treat it as a malformed record.
       // However, we still have chance to parse some of the tokens, by adding extra null tokens in
       // the tail if the number is smaller, or by dropping extra tokens if the number is larger.
@@ -276,7 +273,10 @@ private[csv] object UnivocityParser {
       inputStream: InputStream,
       shouldDropHeader: Boolean,
       tokenizer: CsvParser): Iterator[Array[String]] = {
-    convertStream(inputStream, shouldDropHeader, tokenizer)(tokens => tokens)
+    val handleHeader: () => Unit =
+      () => if (shouldDropHeader) tokenizer.parseNext
+
+    convertStream(inputStream, tokenizer, handleHeader)(tokens => tokens)
   }
 
   /**
@@ -284,35 +284,36 @@ private[csv] object UnivocityParser {
    */
   def parseStream(
       inputStream: InputStream,
-      shouldDropHeader: Boolean,
       parser: UnivocityParser,
-      schema: StructType,
-      checkHeader: Array[String] => Unit): Iterator[InternalRow] = {
+      headerChecker: CSVHeaderChecker,
+      schema: StructType): Iterator[InternalRow] = {
     val tokenizer = parser.tokenizer
     val safeParser = new FailureSafeParser[Array[String]](
       input => Seq(parser.convert(input)),
       parser.options.parseMode,
       schema,
-      parser.options.columnNameOfCorruptRecord)
-    convertStream(inputStream, shouldDropHeader, tokenizer, checkHeader) { tokens =>
+      parser.options.columnNameOfCorruptRecord,
+      parser.options.multiLine)
+
+    val handleHeader: () => Unit =
+      () => headerChecker.checkHeaderColumnNames(tokenizer)
+
+    convertStream(inputStream, tokenizer, handleHeader) { tokens =>
       safeParser.parse(tokens)
     }.flatten
   }
 
   private def convertStream[T](
       inputStream: InputStream,
-      shouldDropHeader: Boolean,
       tokenizer: CsvParser,
-      checkHeader: Array[String] => Unit = _ => ())(
+      handleHeader: () => Unit)(
       convert: Array[String] => T) = new Iterator[T] {
     tokenizer.beginParsing(inputStream)
-    private var nextRecord = {
-      if (shouldDropHeader) {
-        val firstRecord = tokenizer.parseNext()
-        checkHeader(firstRecord)
-      }
-      tokenizer.parseNext()
-    }
+
+    // We can handle header here since here the stream is open.
+    handleHeader()
+
+    private var nextRecord = tokenizer.parseNext()
 
     override def hasNext: Boolean = nextRecord != null
 
@@ -332,7 +333,10 @@ private[csv] object UnivocityParser {
   def parseIterator(
       lines: Iterator[String],
       parser: UnivocityParser,
+      headerChecker: CSVHeaderChecker,
       schema: StructType): Iterator[InternalRow] = {
+    headerChecker.checkHeaderColumnNames(lines, parser.tokenizer)
+
     val options = parser.options
 
     val filteredLines: Iterator[String] = CSVUtils.filterCommentAndEmpty(lines, options)
@@ -341,7 +345,8 @@ private[csv] object UnivocityParser {
       input => Seq(parser.parse(input)),
       parser.options.parseMode,
       schema,
-      parser.options.columnNameOfCorruptRecord)
+      parser.options.columnNameOfCorruptRecord,
+      parser.options.multiLine)
     filteredLines.flatMap(safeParser.parse)
   }
 }

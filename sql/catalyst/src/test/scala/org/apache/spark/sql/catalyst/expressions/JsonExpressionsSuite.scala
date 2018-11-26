@@ -23,7 +23,7 @@ import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.plans.PlanTestBase
-import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeTestUtils, DateTimeUtils, GenericArrayData, PermissiveMode}
+import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -242,6 +242,13 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
     checkEvaluation(
       GetJsonObject(NonFoldableLiteral(json), NonFoldableLiteral("$.fb:testid")),
       "1234")
+  }
+
+  test("some big value") {
+    val value = "x" * 3000
+    checkEvaluation(
+      GetJsonObject(NonFoldableLiteral((s"""{"big": "$value"}""")),
+      NonFoldableLiteral("$.big")), value)
   }
 
   val jsonTupleQuery = Literal("f1") ::
@@ -503,7 +510,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
     )
 
     val jsonData2 = """{"t": "2016-01-01T00:00:00"}"""
-    for (tz <- DateTimeTestUtils.ALL_TIMEZONES) {
+    for (tz <- DateTimeTestUtils.outstandingTimezones) {
       c = Calendar.getInstance(tz)
       c.set(2016, 0, 1, 0, 0, 0)
       c.set(Calendar.MILLISECOND, 0)
@@ -694,7 +701,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
           |""".stripMargin
         val jsonSchema = new StructType()
           .add("a", LongType, nullable = false)
-          .add("b", StringType, nullable = false)
+          .add("b", StringType, nullable = !forceJsonNullableSchema)
           .add("c", StringType, nullable = false)
         val output = InternalRow(1L, null, UTF8String.fromString("foo"))
         val expr = JsonToStructs(jsonSchema, Map.empty, Literal.create(input, StringType), gmtId)
@@ -707,9 +714,17 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   }
 
   test("SPARK-24709: infer schema of json strings") {
-    checkEvaluation(SchemaOfJson(Literal.create("""{"col":0}""")), "struct<col:bigint>")
+    checkEvaluation(new SchemaOfJson(Literal.create("""{"col":0}""")),
+      "struct<col:bigint>")
     checkEvaluation(
-      SchemaOfJson(Literal.create("""{"col0":["a"], "col1": {"col2": "b"}}""")),
+      new SchemaOfJson(Literal.create("""{"col0":["a"], "col1": {"col2": "b"}}""")),
       "struct<col0:array<string>,col1:struct<col2:string>>")
+  }
+
+  test("infer schema of JSON strings by using options") {
+    checkEvaluation(
+      new SchemaOfJson(Literal.create("""{"col":01}"""),
+        CreateMap(Seq(Literal.create("allowNumericLeadingZeros"), Literal.create("true")))),
+      "struct<col:bigint>")
   }
 }
