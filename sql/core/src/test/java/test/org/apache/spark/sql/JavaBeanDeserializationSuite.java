@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
+import com.google.common.base.MoreObjects;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.util.DateTimeUtils;
@@ -486,7 +487,7 @@ public class JavaBeanDeserializationSuite implements Serializable {
 
     @Override
     public String toString() {
-      return com.google.common.base.Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
               .add("shortField", shortField)
               .add("intField", intField)
               .add("longField", longField)
@@ -584,7 +585,7 @@ public class JavaBeanDeserializationSuite implements Serializable {
 
     @Override
     public String toString() {
-      return com.google.common.base.Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
         .add("localDateField", localDateField)
         .add("instantField", instantField)
         .toString();
