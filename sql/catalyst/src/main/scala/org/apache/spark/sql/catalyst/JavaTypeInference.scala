@@ -111,11 +111,11 @@ object JavaTypeInference {
         val (dataType, nullable) = inferDataType(typeToken.getComponentType, seenTypeSet)
         (ArrayType(dataType, nullable), true)
 
-      case _ if iterableType.isAssignableFrom(typeToken) =>
+      case _ if iterableType.isSupertypeOf(typeToken) =>
         val (dataType, nullable) = inferDataType(elementType(typeToken), seenTypeSet)
         (ArrayType(dataType, nullable), true)
 
-      case _ if mapType.isAssignableFrom(typeToken) =>
+      case _ if mapType.isSupertypeOf(typeToken) =>
         val (keyType, valueType) = mapKeyValueType(typeToken)
         val (keyDataType, _) = inferDataType(keyType, seenTypeSet)
         val (valueDataType, nullable) = inferDataType(valueType, seenTypeSet)
@@ -273,7 +273,7 @@ object JavaTypeInference {
         }
         Invoke(arrayData, methodName, ObjectType(c))
 
-      case c if listType.isAssignableFrom(typeToken) =>
+      case c if listType.isSupertypeOf(typeToken) =>
         val et = elementType(typeToken)
         val newTypePath = walkedTypePath.recordArray(et.getType.getTypeName)
         val (dataType, elementNullable) = inferDataType(et)
@@ -289,7 +289,7 @@ object JavaTypeInference {
 
         UnresolvedMapObjects(mapFunction, path, customCollectionCls = Some(c))
 
-      case _ if mapType.isAssignableFrom(typeToken) =>
+      case _ if mapType.isSupertypeOf(typeToken) =>
         val (keyType, valueType) = mapKeyValueType(typeToken)
         val newTypePath = walkedTypePath.recordMap(keyType.getType.getTypeName,
           valueType.getType.getTypeName)
@@ -404,10 +404,10 @@ object JavaTypeInference {
         case _ if typeToken.isArray =>
           toCatalystArray(inputObject, typeToken.getComponentType)
 
-        case _ if listType.isAssignableFrom(typeToken) =>
+        case _ if listType.isSupertypeOf(typeToken) =>
           toCatalystArray(inputObject, elementType(typeToken))
 
-        case _ if mapType.isAssignableFrom(typeToken) =>
+        case _ if mapType.isSupertypeOf(typeToken) =>
           val (keyType, valueType) = mapKeyValueType(typeToken)
 
           createSerializerForMap(

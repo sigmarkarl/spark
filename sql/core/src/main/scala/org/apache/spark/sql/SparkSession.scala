@@ -1024,12 +1024,12 @@ object SparkSession extends Logging {
    * @since 2.2.0
    */
   def getActiveSession: Option[SparkSession] = {
-    if (TaskContext.get != null) {
+    //if (TaskContext.get != null) {
       // Return None when running on executors.
-      None
-    } else {
+    //  None
+    //} else {
       Option(activeThreadSession.get)
-    }
+    //}
   }
 
   /**

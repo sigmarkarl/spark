@@ -405,10 +405,10 @@ private[spark] object HadoopRDD extends Logging {
    * The three methods below are helpers for accessing the local map, a property of the SparkEnv of
    * the local process.
    */
-  def getCachedMetadata(key: String): Any = SparkEnv.get.hadoopJobMetadata.get(key)
+  def getCachedMetadata(key: String): Any = SparkEnv.get.hadoopJobMetadata.asMap().get(key)
 
   private def putCachedMetadata(key: String, value: Any): Unit =
-    SparkEnv.get.hadoopJobMetadata.put(key, value)
+    SparkEnv.get.hadoopJobMetadata.put(key, value.asInstanceOf[AnyRef])
 
   /** Add Hadoop configuration specific to a single partition and attempt. */
   def addLocalConfiguration(jobTrackerId: String, jobId: Int, splitId: Int, attemptId: Int,
