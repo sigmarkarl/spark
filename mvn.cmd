@@ -1,0 +1,1 @@
+./build/mvn -Pkubernetes -Phadoop-3.2 -Psparkr -DskipTests clean package
