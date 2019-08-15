@@ -19,6 +19,7 @@ package org.apache.spark.network.shuffle.protocol;
 
 import java.util.Arrays;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import io.netty.buffer.ByteBuf;
 
@@ -56,7 +57,7 @@ public class FetchShuffleBlocks extends BlockTransferMessage {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
       .add("appId", appId)
       .add("execId", execId)
       .add("shuffleId", shuffleId)
