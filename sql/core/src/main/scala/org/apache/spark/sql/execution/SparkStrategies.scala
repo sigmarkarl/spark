@@ -682,6 +682,9 @@ abstract class SparkStrategies extends QueryPlanner[SparkPlan] {
           f, p, b, is, ot, planLater(child)) :: Nil
       case logical.FlatMapGroupsInPandas(grouping, func, output, child) =>
         execution.python.FlatMapGroupsInPandasExec(grouping, func, output, planLater(child)) :: Nil
+      case logical.FlatMapCoGroupsInPandas(leftGroup, rightGroup, func, output, left, right) =>
+        execution.python.FlatMapCoGroupsInPandasExec(
+          leftGroup, rightGroup, func, output, planLater(left), planLater(right)) :: Nil
       case logical.MapInPandas(func, output, child) =>
         execution.python.MapInPandasExec(func, output, planLater(child)) :: Nil
       case logical.MapElements(f, _, _, objAttr, child) =>
@@ -742,6 +745,8 @@ abstract class SparkStrategies extends QueryPlanner[SparkPlan] {
       case ExternalRDD(outputObjAttr, rdd) => ExternalRDDScanExec(outputObjAttr, rdd) :: Nil
       case r: LogicalRDD =>
         RDDScanExec(r.output, r.rdd, "ExistingRDD", r.outputPartitioning, r.outputOrdering) :: Nil
+      case _: UpdateTable =>
+        throw new UnsupportedOperationException(s"UPDATE TABLE is not supported temporarily.")
       case _ => Nil
     }
   }
