@@ -20,6 +20,8 @@ package org.apache.spark.storage
 import java.io.{File, IOException}
 import java.util.UUID
 
+import scala.collection.Seq
+
 import org.apache.spark.SparkConf
 import org.apache.spark.executor.ExecutorExitCode
 import org.apache.spark.internal.{config, Logging}

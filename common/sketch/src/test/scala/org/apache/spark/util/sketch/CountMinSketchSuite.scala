@@ -77,8 +77,7 @@ class CountMinSketchSuite extends FunSuite { // scalastyle:ignore funsuite
 
       assert(
         probCorrect > confidence,
-        s"Confidence not reached: required $confidence, reached $probCorrect"
-      )
+        s"Confidence not reached: required $confidence, reached $probCorrect")
     }
   }
 
@@ -128,9 +127,13 @@ class CountMinSketchSuite extends FunSuite { // scalastyle:ignore funsuite
 
   testItemType[Long]("Long") { _.nextLong() }
 
-  testItemType[String]("String") { r => r.nextString(r.nextInt(20)) }
+  testItemType[String]("String") { r =>
+    r.nextString(r.nextInt(20))
+  }
 
-  testItemType[Array[Byte]]("Byte array") { r => r.nextString(r.nextInt(60)).getBytes }
+  testItemType[Array[Byte]]("Byte array") { r =>
+    r.nextString(r.nextInt(60)).getBytes
+  }
 
   test("incompatible merge") {
     intercept[IncompatibleMergeException] {

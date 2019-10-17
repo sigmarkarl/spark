@@ -28,7 +28,10 @@ import org.apache.spark.unsafe.types.UTF8String.{fromString => toUTF8}
 /**
  * This TestSuite utilize ScalaCheck to generate randomized inputs for UTF8String testing.
  */
-class UTF8StringPropertyCheckSuite extends FunSuite with ScalaCheckDrivenPropertyChecks with Matchers {
+class UTF8StringPropertyCheckSuite
+    extends FunSuite
+    with ScalaCheckDrivenPropertyChecks
+    with Matchers {
 // scalastyle:on
 
   test("toString") {
@@ -123,15 +126,12 @@ class UTF8StringPropertyCheckSuite extends FunSuite with ScalaCheckDrivenPropert
       if (len < s.length) s.substring(0, len) else s
     }
 
-    forAll(
-        whitespaceString,
-        randomString,
-        whitespaceString
-    ) { (start: String, middle: String, end: String) =>
-      val s = start + middle + end
-      assert(toUTF8(s).trim() === toUTF8(rTrim(lTrim(s))))
-      assert(toUTF8(s).trimLeft() === toUTF8(lTrim(s)))
-      assert(toUTF8(s).trimRight() === toUTF8(rTrim(s)))
+    forAll(whitespaceString, randomString, whitespaceString) {
+      (start: String, middle: String, end: String) =>
+        val s = start + middle + end
+        assert(toUTF8(s).trim() === toUTF8(rTrim(lTrim(s))))
+        assert(toUTF8(s).trimLeft() === toUTF8(lTrim(s)))
+        assert(toUTF8(s).trimRight() === toUTF8(rTrim(s)))
     }
   }
 
@@ -179,15 +179,13 @@ class UTF8StringPropertyCheckSuite extends FunSuite with ScalaCheckDrivenPropert
       }
     }
 
-    forAll (
-      randomString,
-      randomString,
-      randomInt
-    ) { (s: String, pad: String, length: Int) =>
-      assert(toUTF8(s).lpad(length, toUTF8(pad)) ===
-        toUTF8(padding(s, pad, length, true)))
-      assert(toUTF8(s).rpad(length, toUTF8(pad)) ===
-        toUTF8(padding(s, pad, length, false)))
+    forAll(randomString, randomString, randomInt) { (s: String, pad: String, length: Int) =>
+      assert(
+        toUTF8(s).lpad(length, toUTF8(pad)) ===
+          toUTF8(padding(s, pad, length, true)))
+      assert(
+        toUTF8(s).rpad(length, toUTF8(pad)) ===
+          toUTF8(padding(s, pad, length, false)))
     }
   }
 
@@ -200,7 +198,7 @@ class UTF8StringPropertyCheckSuite extends FunSuite with ScalaCheckDrivenPropert
     forAll { (inputs: Seq[String]) =>
       assert(UTF8String.concat(inputs.map(toUTF8): _*) === toUTF8(inputs.mkString))
     }
-    forAll (nullalbeSeq) { (inputs: Seq[String]) =>
+    forAll(nullalbeSeq) { (inputs: Seq[String]) =>
       assert(UTF8String.concat(inputs.map(toUTF8): _*) === toUTF8(concat(inputs)))
     }
   }
@@ -212,27 +210,31 @@ class UTF8StringPropertyCheckSuite extends FunSuite with ScalaCheckDrivenPropert
     }
 
     forAll { (sep: String, inputs: Seq[String]) =>
-      assert(UTF8String.concatWs(toUTF8(sep), inputs.map(toUTF8): _*) ===
-        toUTF8(inputs.mkString(sep)))
+      assert(
+        UTF8String.concatWs(toUTF8(sep), inputs.map(toUTF8): _*) ===
+          toUTF8(inputs.mkString(sep)))
     }
-    forAll(randomString, nullalbeSeq) {(sep: String, inputs: Seq[String]) =>
-      assert(UTF8String.concatWs(toUTF8(sep), inputs.map(toUTF8): _*) ===
-        toUTF8(concatWs(sep, inputs)))
+    forAll(randomString, nullalbeSeq) { (sep: String, inputs: Seq[String]) =>
+      assert(
+        UTF8String.concatWs(toUTF8(sep), inputs.map(toUTF8): _*) ===
+          toUTF8(concatWs(sep, inputs)))
     }
   }
 
   // TODO: enable this when we find a proper way to generate valid patterns
   ignore("split") {
     forAll { (s: String, pattern: String, limit: Int) =>
-      assert(toUTF8(s).split(toUTF8(pattern), limit) ===
-        s.split(pattern, limit).map(toUTF8(_)))
+      assert(
+        toUTF8(s).split(toUTF8(pattern), limit) ===
+          s.split(pattern, limit).map(toUTF8(_)))
     }
   }
 
   test("levenshteinDistance") {
     forAll { (one: String, another: String) =>
-      assert(toUTF8(one).levenshteinDistance(toUTF8(another)) ===
-        LevenshteinDistance.getDefaultInstance.apply(one, another))
+      assert(
+        toUTF8(one).levenshteinDistance(toUTF8(another)) ===
+          LevenshteinDistance.getDefaultInstance.apply(one, another))
     }
   }
 
