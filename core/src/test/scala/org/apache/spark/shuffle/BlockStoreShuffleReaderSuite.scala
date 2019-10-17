@@ -130,15 +130,16 @@ class BlockStoreShuffleReaderSuite extends SparkFunSuite with LocalSparkContext 
 
     val taskContext = TaskContext.empty()
     val metrics = taskContext.taskMetrics.createTempShuffleReadMetrics()
+    val blocksByAddress = mapOutputTracker.getMapSizesByExecutorId(
+      shuffleId, reduceId, reduceId + 1)
     val shuffleReader = new BlockStoreShuffleReader(
       shuffleHandle,
-      reduceId,
-      reduceId + 1,
+      blocksByAddress,
       taskContext,
       metrics,
       serializerManager,
       blockManager,
-      mapOutputTracker)
+      shouldBatchFetch = false)
 
     assert(shuffleReader.read().length === keyValuePairsPerMap * numMaps)
 

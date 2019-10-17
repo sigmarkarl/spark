@@ -17,24 +17,26 @@
 
 package org.apache.spark.shuffle
 
-import org.apache.spark.network.buffer.ManagedBuffer
-import org.apache.spark.storage.BlockId
+import org.apache.spark.SparkConf
+import org.apache.spark.internal.config.SHUFFLE_IO_PLUGIN_CLASS
+import org.apache.spark.shuffle.api.ShuffleDataIO
+import org.apache.spark.util.Utils
 
-private[spark]
-/**
- * Implementers of this trait understand how to retrieve block data for a logical shuffle block
- * identifier (i.e. map, reduce, and shuffle). Implementations may use files or file segments to
- * encapsulate shuffle data. This is used by the BlockStore to abstract over different shuffle
- * implementations when shuffle data is retrieved.
- */
-trait ShuffleBlockResolver {
-  type ShuffleId = Int
+private[spark] object ShuffleDataIOUtils {
 
   /**
-   * Retrieve the data for the specified block. If the data for that block is not available,
-   * throws an unspecified exception.
+   * The prefix of spark config keys that are passed from the driver to the executor.
    */
-  def getBlockData(blockId: BlockId): ManagedBuffer
+  val SHUFFLE_SPARK_CONF_PREFIX = "spark.shuffle.plugin.__config__."
 
-  def stop(): Unit
+  def loadShuffleDataIO(conf: SparkConf): ShuffleDataIO = {
+    val configuredPluginClass = conf.get(SHUFFLE_IO_PLUGIN_CLASS)
+    val maybeIO = Utils.loadExtensions(
+      classOf[ShuffleDataIO], Seq(configuredPluginClass), conf)
+    require(maybeIO.nonEmpty, s"A valid shuffle plugin must be specified by config " +
+      s"${SHUFFLE_IO_PLUGIN_CLASS.key}, but $configuredPluginClass resulted in zero valid " +
+      s"plugins.")
+    maybeIO.head
+  }
+
 }

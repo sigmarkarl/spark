@@ -355,6 +355,16 @@ object SQLConf {
       .bytesConf(ByteUnit.BYTE)
       .createWithDefault(64 * 1024 * 1024)
 
+
+  val FETCH_SHUFFLE_BLOCKS_IN_BATCH_ENABLED =
+    buildConf("spark.sql.adaptive.fetchShuffleBlocksInBatch.enabled")
+      .doc("Whether to fetch the continuous shuffle blocks in batch. Instead of fetching blocks " +
+        "one by one, fetching continuous shuffle blocks for the same map task in batch can " +
+        "reduce IO and improve performance. Note, this feature also depends on a relocatable " +
+        "serializer and the concatenation support codec in use.")
+      .booleanConf
+      .createWithDefault(true)
+
   val ADAPTIVE_EXECUTION_ENABLED = buildConf("spark.sql.adaptive.enabled")
     .doc("When true, enable adaptive query execution.")
     .booleanConf
@@ -393,6 +403,14 @@ object SQLConf {
       .checkValue(_ > 0, "The maximum shuffle partition number " +
         "must be a positive integer.")
       .createOptional
+
+  val OPTIMIZE_LOCAL_SHUFFLE_READER_ENABLED =
+    buildConf("spark.sql.adaptive.optimizedLocalShuffleReader.enabled")
+    .doc("When true and adaptive execution is enabled, this enables the optimization of" +
+      " converting the shuffle reader to local shuffle reader for the shuffle exchange" +
+      " of the broadcast hash join in probe side.")
+    .booleanConf
+    .createWithDefault(true)
 
   val SUBEXPRESSION_ELIMINATION_ENABLED =
     buildConf("spark.sql.subexpressionElimination.enabled")
@@ -1732,7 +1750,7 @@ object SQLConf {
       .stringConf
       .transform(_.toUpperCase(Locale.ROOT))
       .checkValues(StoreAssignmentPolicy.values.map(_.toString))
-      .createOptional
+      .createWithDefault(StoreAssignmentPolicy.ANSI.toString)
 
   val ANSI_ENABLED = buildConf("spark.sql.ansi.enabled")
     .doc("When true, Spark tries to conform to the ANSI SQL specification: 1. Spark will " +
@@ -2133,6 +2151,9 @@ class SQLConf extends Serializable with Logging {
   def targetPostShuffleInputSize: Long =
     getConf(SHUFFLE_TARGET_POSTSHUFFLE_INPUT_SIZE)
 
+  def fetchShuffleBlocksInBatchEnabled: Boolean =
+    getConf(FETCH_SHUFFLE_BLOCKS_IN_BATCH_ENABLED)
+
   def adaptiveExecutionEnabled: Boolean = getConf(ADAPTIVE_EXECUTION_ENABLED)
 
   def nonEmptyPartitionRatioForBroadcastJoin: Double =
@@ -2465,8 +2486,8 @@ class SQLConf extends Serializable with Logging {
   def partitionOverwriteMode: PartitionOverwriteMode.Value =
     PartitionOverwriteMode.withName(getConf(PARTITION_OVERWRITE_MODE))
 
-  def storeAssignmentPolicy: Option[StoreAssignmentPolicy.Value] =
-    getConf(STORE_ASSIGNMENT_POLICY).map(StoreAssignmentPolicy.withName)
+  def storeAssignmentPolicy: StoreAssignmentPolicy.Value =
+    StoreAssignmentPolicy.withName(getConf(STORE_ASSIGNMENT_POLICY))
 
   def ansiEnabled: Boolean = getConf(ANSI_ENABLED)
 
