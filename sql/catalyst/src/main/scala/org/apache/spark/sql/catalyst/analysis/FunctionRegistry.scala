@@ -486,6 +486,7 @@ object FunctionRegistry {
     expression[CurrentDatabase]("current_database"),
     expression[CallMethodViaReflection]("reflect"),
     expression[CallMethodViaReflection]("java_method"),
+    expression[Version]("version"),
 
     // grouping sets
     expression[Cube]("cube"),
@@ -524,6 +525,10 @@ object FunctionRegistry {
     expression[BitwiseNot]("~"),
     expression[BitwiseOr]("|"),
     expression[BitwiseXor]("^"),
+    expression[BitwiseCount]("bit_count"),
+    expression[BitAndAgg]("bit_and"),
+    expression[BitOrAgg]("bit_or"),
+    expression[BitXorAgg]("bit_xor"),
 
     // json
     expression[StructsToJson]("to_json"),
