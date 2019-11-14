@@ -37,7 +37,6 @@ import org.apache.spark.sql.catalyst.expressions.CodegenObjectFactoryMode
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.HintErrorHandler
 import org.apache.spark.sql.connector.catalog.CatalogManager.SESSION_CATALOG_NAME
-import org.apache.spark.sql.internal.SQLConf.StoreAssignmentPolicy
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.util.Utils
 
@@ -1094,6 +1093,25 @@ object SQLConf {
       .checkValue(v => Set(1, 2).contains(v), "Valid versions are 1 and 2")
       .createWithDefault(2)
 
+  val STREAMING_STOP_ACTIVE_RUN_ON_RESTART =
+    buildConf("spark.sql.streaming.stopActiveRunOnRestart")
+    .doc("Running multiple runs of the same streaming query concurrently is not supported. " +
+      "If we find a concurrent active run for a streaming query (in the same or different " +
+      "SparkSessions on the same cluster) and this flag is true, we will stop the old streaming " +
+      "query run to start the new one.")
+    .booleanConf
+    .createWithDefault(true)
+
+  val STREAMING_JOIN_STATE_FORMAT_VERSION =
+    buildConf("spark.sql.streaming.join.stateFormatVersion")
+      .internal()
+      .doc("State format version used by streaming join operations in a streaming query. " +
+        "State between versions are tend to be incompatible, so state format version shouldn't " +
+        "be modified after running.")
+      .intConf
+      .checkValue(v => Set(1, 2).contains(v), "Valid versions are 1 and 2")
+      .createWithDefault(2)
+
   val UNSUPPORTED_OPERATION_CHECK_ENABLED =
     buildConf("spark.sql.streaming.unsupportedOperationCheck")
       .internal()
@@ -1794,7 +1812,7 @@ object SQLConf {
         "reading unnecessary nested column data. Currently Parquet and ORC are the " +
         "data sources that implement this optimization.")
       .booleanConf
-      .createWithDefault(false)
+      .createWithDefault(true)
 
   val SERIALIZER_NESTED_SCHEMA_PRUNING_ENABLED =
     buildConf("spark.sql.optimizer.serializer.nestedSchemaPruning.enabled")
@@ -1803,7 +1821,7 @@ object SQLConf {
         "satisfying a query. This optimization allows object serializers to avoid " +
         "executing unnecessary nested expressions.")
       .booleanConf
-      .createWithDefault(false)
+      .createWithDefault(true)
 
   val NESTED_PRUNING_ON_EXPRESSIONS =
     buildConf("spark.sql.optimizer.expression.nestedPruning.enabled")
@@ -1813,7 +1831,7 @@ object SQLConf {
         "physical data source scanning. For pruning nested fields from scanning, please use " +
         "`spark.sql.optimizer.nestedSchemaPruning.enabled` config.")
       .booleanConf
-      .createWithDefault(false)
+      .createWithDefault(true)
 
   val TOP_K_SORT_FALLBACK_THRESHOLD =
     buildConf("spark.sql.execution.topKSortFallbackThreshold")
@@ -2009,10 +2027,11 @@ object SQLConf {
     .booleanConf
     .createWithDefault(false)
 
-  val DEFAULT_V2_CATALOG = buildConf("spark.sql.default.catalog")
-    .doc("Name of the default v2 catalog, used when a catalog is not identified in queries")
+  val DEFAULT_CATALOG = buildConf("spark.sql.defaultCatalog")
+    .doc("Name of the default catalog. This will be the current catalog if users have not " +
+      "explicitly set the current catalog yet.")
     .stringConf
-    .createOptional
+    .createWithDefault(SESSION_CATALOG_NAME)
 
   val V2_SESSION_CATALOG_IMPLEMENTATION =
     buildConf(s"spark.sql.catalog.$SESSION_CATALOG_NAME")
@@ -2545,8 +2564,6 @@ class SQLConf extends Serializable with Logging {
     getConf(SQLConf.SET_COMMAND_REJECTS_SPARK_CORE_CONFS)
 
   def castDatetimeToString: Boolean = getConf(SQLConf.LEGACY_CAST_DATETIME_TO_STRING)
-
-  def defaultV2Catalog: Option[String] = getConf(DEFAULT_V2_CATALOG)
 
   def ignoreDataLocality: Boolean = getConf(SQLConf.IGNORE_DATA_LOCALITY)
 

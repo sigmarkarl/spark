@@ -73,7 +73,11 @@ class ResolveCatalogs(val catalogManager: CatalogManager)
       createAlterTable(nameParts, catalog, tableName, changes)
 
     case AlterTableSetLocationStatement(
-         nameParts @ NonSessionCatalog(catalog, tableName), newLoc) =>
+         nameParts @ NonSessionCatalog(catalog, tableName), partitionSpec, newLoc) =>
+      if (partitionSpec.nonEmpty) {
+        throw new AnalysisException(
+          "ALTER TABLE SET LOCATION does not support partition for v2 tables.")
+      }
       val changes = Seq(TableChange.setProperty("location", newLoc))
       createAlterTable(nameParts, catalog, tableName, changes)
 
@@ -88,19 +92,6 @@ class ResolveCatalogs(val catalogManager: CatalogManager)
       throw new AnalysisException(
         s"Can not specify catalog `${catalog.name}` for view ${tableName.quoted} " +
           s"because view support in catalog has not been implemented yet")
-
-    case DeleteFromStatement(
-         nameParts @ NonSessionCatalog(catalog, tableName), tableAlias, condition) =>
-      val r = UnresolvedV2Relation(nameParts, catalog.asTableCatalog, tableName.asIdentifier)
-      val aliased = tableAlias.map(SubqueryAlias(_, r)).getOrElse(r)
-      DeleteFromTable(aliased, condition)
-
-    case u @ UpdateTableStatement(
-         nameParts @ CatalogAndIdentifierParts(catalog, tableName), _, _, _, _) =>
-      val r = UnresolvedV2Relation(nameParts, catalog.asTableCatalog, tableName.asIdentifier)
-      val aliased = u.tableAlias.map(SubqueryAlias(_, r)).getOrElse(r)
-      val columns = u.columns.map(UnresolvedAttribute(_))
-      UpdateTable(aliased, columns, u.values, u.condition)
 
     case DescribeTableStatement(
          nameParts @ NonSessionCatalog(catalog, tableName), partitionSpec, isExtended) =>
@@ -179,7 +170,7 @@ class ResolveCatalogs(val catalogManager: CatalogManager)
         c.properties)
 
     case DropNamespaceStatement(NonSessionCatalog(catalog, nameParts), ifExists, cascade) =>
-      DropNamespace(catalog.asNamespaceCatalog, nameParts, ifExists, cascade)
+      DropNamespace(catalog, nameParts, ifExists, cascade)
 
     case ShowNamespacesStatement(Some(CatalogAndNamespace(catalog, namespace)), pattern) =>
       ShowNamespaces(catalog.asNamespaceCatalog, namespace, pattern)
@@ -200,6 +191,14 @@ class ResolveCatalogs(val catalogManager: CatalogManager)
         val CatalogAndNamespace(catalog, namespace) = nameParts
         SetCatalogAndNamespace(catalogManager, Some(catalog.name()), namespace)
       }
+
+    case ShowCurrentNamespaceStatement() =>
+      ShowCurrentNamespace(catalogManager)
+
+    case ShowTablePropertiesStatement(
+      nameParts @ NonSessionCatalog(catalog, tableName), propertyKey) =>
+      val r = UnresolvedV2Relation(nameParts, catalog.asTableCatalog, tableName.asIdentifier)
+      ShowTableProperties(r, propertyKey)
   }
 
   object NonSessionCatalog {

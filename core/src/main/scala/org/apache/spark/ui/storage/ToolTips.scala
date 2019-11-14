@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.spark.executor
+package org.apache.spark.ui.storage
 
-import com.codahale.metrics.MetricRegistry
+private[ui] object ToolTips {
 
-import org.apache.spark.metrics.source.Source
+  val RDD_NAME =
+    "Name of the persisted RDD"
 
-private[spark]
-class ExecutorPluginSource(name: String) extends Source {
+  val STORAGE_LEVEL =
+    "StorageLevel displays where the persisted RDD is stored, " +
+      "format of the persisted RDD (serialized or de-serialized) and" +
+      "replication factor of the persisted RDD"
 
-  override val metricRegistry = new MetricRegistry()
+  val CACHED_PARTITIONS =
+    "Number of partitions cached"
 
-  override val sourceName = name
+  val FRACTION_CACHED =
+    "Fraction of total partitions cached"
+
+  val SIZE_IN_MEMORY =
+    "Total size of partitions in memory"
+
+  val SIZE_ON_DISK =
+    "Total size of partitions on the disk"
 }
+
