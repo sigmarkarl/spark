@@ -24,6 +24,18 @@ grammar SqlBase;
   public boolean legacy_setops_precedence_enbled = false;
 
   /**
+   * When false, a literal with an exponent would be converted into
+   * double type rather than decimal type.
+   */
+  public boolean legacy_exponent_literal_as_decimal_enabled = false;
+
+  /**
+   * When false, CREATE TABLE syntax without a provider will use
+   * the value of spark.sql.sources.default as its provider.
+   */
+  public boolean legacy_create_hive_table_by_default_enabled = false;
+
+  /**
    * Verify whether current token is a valid decimal token (which contains dot).
    * Returns true if the character that follows the token is not a digit or letter or underscore.
    *
@@ -46,9 +58,9 @@ grammar SqlBase;
   }
 
   /**
-   * When true, ANSI SQL parsing mode is enabled.
+   * When true, the behavior of keywords follows ANSI SQL standard.
    */
-  public boolean ansi = false;
+  public boolean SQL_standard_keyword_behavior = false;
 }
 
 singleStatement
@@ -95,13 +107,13 @@ statement
         (RESTRICT | CASCADE)?                                          #dropNamespace
     | SHOW (DATABASES | NAMESPACES) ((FROM | IN) multipartIdentifier)?
         (LIKE? pattern=STRING)?                                        #showNamespaces
-    | createTableHeader ('(' colTypeList ')')? tableProvider
-        ((OPTIONS options=tablePropertyList) |
-        (PARTITIONED BY partitioning=transformList) |
-        bucketSpec |
-        locationSpec |
-        (COMMENT comment=STRING) |
-        (TBLPROPERTIES tableProps=tablePropertyList))*
+    | {!legacy_create_hive_table_by_default_enabled}?
+        createTableHeader ('(' colTypeList ')')? tableProvider?
+        createTableClauses
+        (AS? query)?                                                   #createTable
+    | {legacy_create_hive_table_by_default_enabled}?
+        createTableHeader ('(' colTypeList ')')? tableProvider
+        createTableClauses
         (AS? query)?                                                   #createTable
     | createTableHeader ('(' columns=colTypeList ')')?
         ((COMMENT comment=STRING) |
@@ -115,14 +127,14 @@ statement
         (TBLPROPERTIES tableProps=tablePropertyList))*
         (AS? query)?                                                   #createHiveTable
     | CREATE TABLE (IF NOT EXISTS)? target=tableIdentifier
-        LIKE source=tableIdentifier tableProvider? locationSpec?       #createTableLike
-    | replaceTableHeader ('(' colTypeList ')')? tableProvider
-        ((OPTIONS options=tablePropertyList) |
-        (PARTITIONED BY partitioning=transformList) |
-        bucketSpec |
+        LIKE source=tableIdentifier
+        (tableProvider |
+        rowFormat |
+        createFileFormat |
         locationSpec |
-        (COMMENT comment=STRING) |
-        (TBLPROPERTIES tableProps=tablePropertyList))*
+        (TBLPROPERTIES tableProps=tablePropertyList))*                 #createTableLike
+    | replaceTableHeader ('(' colTypeList ')')? tableProvider
+        createTableClauses
         (AS? query)?                                                   #replaceTable
     | ANALYZE TABLE multipartIdentifier partitionSpec? COMPUTE STATISTICS
         (identifier | FOR COLUMNS identifierSeq | FOR ALL COLUMNS)?    #analyze
@@ -165,7 +177,7 @@ statement
     | DROP TABLE (IF EXISTS)? multipartIdentifier PURGE?               #dropTable
     | DROP VIEW (IF EXISTS)? multipartIdentifier                       #dropView
     | CREATE (OR REPLACE)? (GLOBAL? TEMPORARY)?
-        VIEW (IF NOT EXISTS)? tableIdentifier
+        VIEW (IF NOT EXISTS)? multipartIdentifier
         identifierCommentList?
         ((COMMENT STRING) |
          (PARTITIONED ON identifierList) |
@@ -210,7 +222,7 @@ statement
         multipartIdentifier partitionSpec?                             #loadData
     | TRUNCATE TABLE multipartIdentifier partitionSpec?                #truncateTable
     | MSCK REPAIR TABLE multipartIdentifier                            #repairTable
-    | op=(ADD | LIST) identifier .*?                                   #manageResource
+    | op=(ADD | LIST) identifier (STRING | .*?)                        #manageResource
     | SET ROLE .*?                                                     #failNativeCommand
     | SET .*?                                                          #setConfiguration
     | RESET                                                            #resetConfiguration
@@ -262,7 +274,6 @@ unsupportedHiveNativeCommands
     | kw1=COMMIT
     | kw1=ROLLBACK
     | kw1=DFS
-    | kw1=DELETE kw2=FROM
     ;
 
 createTableHeader
@@ -339,6 +350,15 @@ namedQuery
 
 tableProvider
     : USING multipartIdentifier
+    ;
+
+createTableClauses
+    :((OPTIONS options=tablePropertyList) |
+     (PARTITIONED BY partitioning=transformList) |
+     bucketSpec |
+     locationSpec |
+     (COMMENT comment=STRING) |
+     (TBLPROPERTIES tableProps=tablePropertyList))*
     ;
 
 tablePropertyList
@@ -713,7 +733,8 @@ predicate
     : NOT? kind=BETWEEN lower=valueExpression AND upper=valueExpression
     | NOT? kind=IN '(' expression (',' expression)* ')'
     | NOT? kind=IN '(' query ')'
-    | NOT? kind=(RLIKE | LIKE) pattern=valueExpression
+    | NOT? kind=RLIKE pattern=valueExpression
+    | NOT? kind=LIKE pattern=valueExpression (ESCAPE escapeChar=STRING)?
     | IS NOT? kind=NULL
     | IS NOT? kind=(TRUE | FALSE | UNKNOWN)
     | IS NOT? kind=DISTINCT FROM right=valueExpression
@@ -744,7 +765,7 @@ primaryExpression
     | qualifiedName '.' ASTERISK                                                               #star
     | '(' namedExpression (',' namedExpression)+ ')'                                           #rowConstructor
     | '(' query ')'                                                                            #subqueryExpression
-    | qualifiedName '(' (setQuantifier? argument+=expression (',' argument+=expression)*)? ')'
+    | functionName '(' (setQuantifier? argument+=expression (',' argument+=expression)*)? ')'
        (OVER windowSpec)?                                                                      #functionCall
     | identifier '->' expression                                                               #lambda
     | '(' identifier (',' identifier)+ ')' '->' expression                                     #lambda
@@ -764,7 +785,7 @@ primaryExpression
 constant
     : NULL                                                                                     #nullLiteral
     | interval                                                                                 #intervalLiteral
-    | negativeSign=MINUS? identifier STRING                                                    #typeConstructor
+    | identifier STRING                                                                        #typeConstructor
     | number                                                                                   #numericLiteral
     | booleanValue                                                                             #booleanLiteral
     | STRING+                                                                                  #stringLiteral
@@ -787,8 +808,8 @@ booleanValue
     ;
 
 interval
-    : negativeSign=MINUS? INTERVAL (errorCapturingMultiUnitsInterval | errorCapturingUnitToUnitInterval)?
-    | {ansi}? (errorCapturingMultiUnitsInterval | errorCapturingUnitToUnitInterval)
+    : INTERVAL (errorCapturingMultiUnitsInterval | errorCapturingUnitToUnitInterval)?
+    | {SQL_standard_keyword_behavior}? (errorCapturingMultiUnitsInterval | errorCapturingUnitToUnitInterval)
     ;
 
 errorCapturingMultiUnitsInterval
@@ -908,6 +929,12 @@ qualifiedNameList
     : qualifiedName (',' qualifiedName)*
     ;
 
+functionName
+    : qualifiedName
+    | LEFT
+    | RIGHT
+    ;
+
 qualifiedName
     : identifier ('.' identifier)*
     ;
@@ -927,14 +954,14 @@ errorCapturingIdentifierExtra
 
 identifier
     : strictIdentifier
-    | {!ansi}? strictNonReserved
+    | {!SQL_standard_keyword_behavior}? strictNonReserved
     ;
 
 strictIdentifier
     : IDENTIFIER              #unquotedIdentifier
     | quotedIdentifier        #quotedIdentifierAlternative
-    | {ansi}? ansiNonReserved #unquotedIdentifier
-    | {!ansi}? nonReserved    #unquotedIdentifier
+    | {SQL_standard_keyword_behavior}? ansiNonReserved #unquotedIdentifier
+    | {!SQL_standard_keyword_behavior}? nonReserved    #unquotedIdentifier
     ;
 
 quotedIdentifier
@@ -942,7 +969,9 @@ quotedIdentifier
     ;
 
 number
-    : MINUS? DECIMAL_VALUE            #decimalLiteral
+    : {!legacy_exponent_literal_as_decimal_enabled}? MINUS? EXPONENT_VALUE #exponentLiteral
+    | {!legacy_exponent_literal_as_decimal_enabled}? MINUS? DECIMAL_VALUE  #decimalLiteral
+    | {legacy_exponent_literal_as_decimal_enabled}? MINUS? (EXPONENT_VALUE | DECIMAL_VALUE) #legacyDecimalLiteral
     | MINUS? INTEGER_VALUE            #integerLiteral
     | MINUS? BIGINT_LITERAL           #bigIntLiteral
     | MINUS? SMALLINT_LITERAL         #smallIntLiteral
@@ -951,7 +980,7 @@ number
     | MINUS? BIGDECIMAL_LITERAL       #bigDecimalLiteral
     ;
 
-// When `spark.sql.dialect.spark.ansi.enabled=true`, there are 2 kinds of keywords in Spark SQL.
+// When `SQL_standard_keyword_behavior=true`, there are 2 kinds of keywords in Spark SQL.
 // - Reserved keywords:
 //     Keywords that are reserved and can't be used as identifiers for table, view, column,
 //     function, alias, etc.
@@ -1151,9 +1180,9 @@ ansiNonReserved
     | YEARS
     ;
 
-// When `spark.sql.dialect.spark.ansi.enabled=false`, there are 2 kinds of keywords in Spark SQL.
+// When `SQL_standard_keyword_behavior=false`, there are 2 kinds of keywords in Spark SQL.
 // - Non-reserved keywords:
-//     Same definition as the one when `spark.sql.dialect.spark.ansi.enabled=true`.
+//     Same definition as the one when `SQL_standard_keyword_behavior=true`.
 // - Strict-non-reserved keywords:
 //     A strict version of non-reserved keywords, which can not be used as table alias.
 // You can find the full keywords list by searching "Start of the keywords list" in this file.
@@ -1246,6 +1275,7 @@ nonReserved
     | DROP
     | ELSE
     | END
+    | ESCAPE
     | ESCAPED
     | EXCHANGE
     | EXISTS
@@ -1506,6 +1536,7 @@ DISTRIBUTE: 'DISTRIBUTE';
 DROP: 'DROP';
 ELSE: 'ELSE';
 END: 'END';
+ESCAPE: 'ESCAPE';
 ESCAPED: 'ESCAPED';
 EXCEPT: 'EXCEPT';
 EXCHANGE: 'EXCHANGE';
@@ -1748,9 +1779,13 @@ INTEGER_VALUE
     : DIGIT+
     ;
 
-DECIMAL_VALUE
+EXPONENT_VALUE
     : DIGIT+ EXPONENT
-    | DECIMAL_DIGITS EXPONENT? {isValidDecimal()}?
+    | DECIMAL_DIGITS EXPONENT {isValidDecimal()}?
+    ;
+
+DECIMAL_VALUE
+    : DECIMAL_DIGITS {isValidDecimal()}?
     ;
 
 DOUBLE_LITERAL
