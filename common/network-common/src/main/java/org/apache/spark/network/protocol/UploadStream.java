@@ -20,9 +20,9 @@ package org.apache.spark.network.protocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.apache.spark.network.buffer.ManagedBuffer;
 import org.apache.spark.network.buffer.NettyManagedBuffer;
@@ -100,9 +100,9 @@ public final class UploadStream extends AbstractMessage implements RequestMessag
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-      .add("requestId", requestId)
-      .add("body", body())
+    return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+      .append("requestId", requestId)
+      .append("body", body())
       .toString();
   }
 }
