@@ -422,6 +422,36 @@ object SQLConf {
     .booleanConf
     .createWithDefault(true)
 
+  val ADAPTIVE_EXECUTION_SKEWED_JOIN_ENABLED =
+    buildConf("spark.sql.adaptive.optimizeSkewedJoin.enabled")
+    .doc("When true and adaptive execution is enabled, a skewed join is automatically handled at " +
+      "runtime.")
+    .booleanConf
+    .createWithDefault(true)
+
+  val ADAPTIVE_EXECUTION_SKEWED_PARTITION_SIZE_THRESHOLD =
+    buildConf("spark.sql.adaptive.optimizeSkewedJoin.skewedPartitionSizeThreshold")
+      .doc("Configures the minimum size in bytes for a partition that is considered as a skewed " +
+        "partition in adaptive skewed join.")
+      .bytesConf(ByteUnit.BYTE)
+      .createWithDefault(64 * 1024 * 1024)
+
+  val ADAPTIVE_EXECUTION_SKEWED_PARTITION_FACTOR =
+    buildConf("spark.sql.adaptive.optimizeSkewedJoin.skewedPartitionFactor")
+      .doc("A partition is considered as a skewed partition if its size is larger than" +
+        " this factor multiple the median partition size and also larger than " +
+        s" ${ADAPTIVE_EXECUTION_SKEWED_PARTITION_SIZE_THRESHOLD.key}")
+      .intConf
+      .createWithDefault(10)
+
+  val ADAPTIVE_EXECUTION_SKEWED_PARTITION_MAX_SPLITS =
+    buildConf("spark.sql.adaptive.optimizeSkewedJoin.skewedPartitionMaxSplits")
+      .doc("Configures the maximum number of task to handle a skewed partition in adaptive skewed" +
+        "join.")
+      .intConf
+      .checkValue( _ >= 1, "The split size at least be 1")
+      .createWithDefault(5)
+
   val NON_EMPTY_PARTITION_RATIO_FOR_BROADCAST_JOIN =
     buildConf("spark.sql.adaptive.nonEmptyPartitionRatioForBroadcastJoin")
       .doc("The relation with a non-empty partition ratio lower than this config will not be " +
@@ -1579,15 +1609,6 @@ object SQLConf {
         "it might degrade performance. See SPARK-27870.")
       .fallbackConf(BUFFER_SIZE)
 
-  val PANDAS_RESPECT_SESSION_LOCAL_TIMEZONE =
-    buildConf("spark.sql.execution.pandas.respectSessionTimeZone")
-      .internal()
-      .doc("When true, make Pandas DataFrame with timestamp type respecting session local " +
-        "timezone when converting to/from Pandas DataFrame. This configuration will be " +
-        "deprecated in the future releases.")
-      .booleanConf
-      .createWithDefault(true)
-
   val PANDAS_GROUPED_MAP_ASSIGN_COLUMNS_BY_NAME =
     buildConf("spark.sql.legacy.execution.pandas.groupedMap.assignColumnsByName")
       .internal()
@@ -1976,7 +1997,7 @@ object SQLConf {
       .createWithDefault(false)
 
   val TRUNCATE_TABLE_IGNORE_PERMISSION_ACL =
-    buildConf("spark.sql.truncateTable.ignorePermissionAcl")
+    buildConf("spark.sql.truncateTable.ignorePermissionAcl.enabled")
       .internal()
       .doc("When set to true, TRUNCATE TABLE command will not try to set back original " +
         "permission and ACLs when re-creating the table/partition paths.")
@@ -2123,6 +2144,11 @@ object SQLConf {
       .booleanConf
       .createWithDefault(false)
 
+  val CSV_FILTER_PUSHDOWN_ENABLED = buildConf("spark.sql.csv.filterPushdown.enabled")
+    .doc("When true, enable filter pushdown to CSV datasource.")
+    .booleanConf
+    .createWithDefault(true)
+
   /**
    * Holds information about keys that have been deprecated.
    *
@@ -2141,9 +2167,6 @@ object SQLConf {
    */
   val deprecatedSQLConfigs: Map[String, DeprecatedConfig] = {
     val configs = Seq(
-      DeprecatedConfig(PANDAS_RESPECT_SESSION_LOCAL_TIMEZONE.key, "2.3",
-        "Behavior for `false` config value is considered as a bug, and " +
-        "it will be prohibited in the future releases."),
       DeprecatedConfig(
         PANDAS_GROUPED_MAP_ASSIGN_COLUMNS_BY_NAME.key, "2.4",
         "The config allows to switch to the behaviour before Spark 2.4 " +
@@ -2188,7 +2211,10 @@ object SQLConf {
         "It was deprecated since Spark 2.1, and not used in Spark 2.4."),
       RemovedConfig("spark.sql.parquet.int64AsTimestampMillis", "3.0.0", "false",
         "The config was deprecated since Spark 2.3." +
-        s"Use '${PARQUET_OUTPUT_TIMESTAMP_TYPE.key}' instead of it.")
+        s"Use '${PARQUET_OUTPUT_TIMESTAMP_TYPE.key}' instead of it."),
+      RemovedConfig("spark.sql.execution.pandas.respectSessionTimeZone", "3.0.0", "true",
+        "The non-default behavior is considered as a bug, see SPARK-22395. " +
+        "The config was deprecated since Spark 2.3.")
     )
 
     Map(configs.map { cfg => cfg.key -> cfg } : _*)
@@ -2599,8 +2625,6 @@ class SQLConf extends Serializable with Logging {
 
   def pandasUDFBufferSize: Int = getConf(PANDAS_UDF_BUFFER_SIZE)
 
-  def pandasRespectSessionTimeZone: Boolean = getConf(PANDAS_RESPECT_SESSION_LOCAL_TIMEZONE)
-
   def pandasGroupedMapAssignColumnsByName: Boolean =
     getConf(SQLConf.PANDAS_GROUPED_MAP_ASSIGN_COLUMNS_BY_NAME)
 
@@ -2691,6 +2715,8 @@ class SQLConf extends Serializable with Logging {
   def castDatetimeToString: Boolean = getConf(SQLConf.LEGACY_CAST_DATETIME_TO_STRING)
 
   def ignoreDataLocality: Boolean = getConf(SQLConf.IGNORE_DATA_LOCALITY)
+
+  def csvFilterPushDown: Boolean = getConf(CSV_FILTER_PUSHDOWN_ENABLED)
 
   /** ********************** SQLConf functionality methods ************ */
 
