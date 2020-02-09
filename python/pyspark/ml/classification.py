@@ -1395,6 +1395,8 @@ class RandomForestClassifier(JavaProbabilisticClassifier, _RandomForestClassifie
     RandomForestClassificationModel...
     >>> model.setRawPredictionCol("newRawPrediction")
     RandomForestClassificationModel...
+    >>> model.getBootstrap()
+    True
     >>> model.getRawPredictionCol()
     'newRawPrediction'
     >>> model.featureImportances
@@ -1442,14 +1444,14 @@ class RandomForestClassifier(JavaProbabilisticClassifier, _RandomForestClassifie
                  maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                  maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10, impurity="gini",
                  numTrees=20, featureSubsetStrategy="auto", seed=None, subsamplingRate=1.0,
-                 leafCol="", minWeightFractionPerNode=0.0, weightCol=None):
+                 leafCol="", minWeightFractionPerNode=0.0, weightCol=None, bootstrap=True):
         """
         __init__(self, featuresCol="features", labelCol="label", predictionCol="prediction", \
                  probabilityCol="probability", rawPredictionCol="rawPrediction", \
                  maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0, \
                  maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10, impurity="gini", \
                  numTrees=20, featureSubsetStrategy="auto", seed=None, subsamplingRate=1.0, \
-                 leafCol="", minWeightFractionPerNode=0.0, weightCol=None)
+                 leafCol="", minWeightFractionPerNode=0.0, weightCol=None, bootstrap=True)
         """
         super(RandomForestClassifier, self).__init__()
         self._java_obj = self._new_java_obj(
@@ -1457,7 +1459,8 @@ class RandomForestClassifier(JavaProbabilisticClassifier, _RandomForestClassifie
         self._setDefault(maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                          maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10,
                          impurity="gini", numTrees=20, featureSubsetStrategy="auto",
-                         subsamplingRate=1.0, leafCol="", minWeightFractionPerNode=0.0)
+                         subsamplingRate=1.0, leafCol="", minWeightFractionPerNode=0.0,
+                         bootstrap=True)
         kwargs = self._input_kwargs
         self.setParams(**kwargs)
 
@@ -1468,14 +1471,14 @@ class RandomForestClassifier(JavaProbabilisticClassifier, _RandomForestClassifie
                   maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0,
                   maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10, seed=None,
                   impurity="gini", numTrees=20, featureSubsetStrategy="auto", subsamplingRate=1.0,
-                  leafCol="", minWeightFractionPerNode=0.0, weightCol=None):
+                  leafCol="", minWeightFractionPerNode=0.0, weightCol=None, bootstrap=True):
         """
         setParams(self, featuresCol="features", labelCol="label", predictionCol="prediction", \
                  probabilityCol="probability", rawPredictionCol="rawPrediction", \
                   maxDepth=5, maxBins=32, minInstancesPerNode=1, minInfoGain=0.0, \
                   maxMemoryInMB=256, cacheNodeIds=False, checkpointInterval=10, seed=None, \
                   impurity="gini", numTrees=20, featureSubsetStrategy="auto", subsamplingRate=1.0, \
-                  leafCol="", minWeightFractionPerNode=0.0, weightCol=None)
+                  leafCol="", minWeightFractionPerNode=0.0, weightCol=None, bootstrap=True)
         Sets params for linear classification.
         """
         kwargs = self._input_kwargs
@@ -1533,6 +1536,13 @@ class RandomForestClassifier(JavaProbabilisticClassifier, _RandomForestClassifie
         Sets the value of :py:attr:`numTrees`.
         """
         return self._set(numTrees=value)
+
+    @since("3.0.0")
+    def setBootstrap(self, value):
+        """
+        Sets the value of :py:attr:`bootstrap`.
+        """
+        return self._set(bootstrap=value)
 
     @since("1.4.0")
     def setSubsamplingRate(self, value):
@@ -2143,7 +2153,7 @@ class NaiveBayesModel(JavaProbabilisticClassificationModel, _NaiveBayesParams, J
 
 
 class _MultilayerPerceptronParams(_JavaProbabilisticClassifierParams, HasSeed, HasMaxIter,
-                                  HasTol, HasStepSize, HasSolver):
+                                  HasTol, HasStepSize, HasSolver, HasBlockSize):
     """
     Params for :py:class:`MultilayerPerceptronClassifier`.
 
@@ -2154,11 +2164,6 @@ class _MultilayerPerceptronParams(_JavaProbabilisticClassifierParams, HasSeed, H
                    "E.g., Array(780, 100, 10) means 780 inputs, one hidden layer with 100 " +
                    "neurons and output layer of 10 neurons.",
                    typeConverter=TypeConverters.toListInt)
-    blockSize = Param(Params._dummy(), "blockSize", "Block size for stacking input data in " +
-                      "matrices. Data is stacked within partitions. If block size is more than " +
-                      "remaining data in a partition then it is adjusted to the size of this " +
-                      "data. Recommended size is between 10 and 1000, default is 128.",
-                      typeConverter=TypeConverters.toInt)
     solver = Param(Params._dummy(), "solver", "The solver algorithm for optimization. Supported " +
                    "options: l-bfgs, gd.", typeConverter=TypeConverters.toString)
     initialWeights = Param(Params._dummy(), "initialWeights", "The initial weights of the model.",
@@ -2170,13 +2175,6 @@ class _MultilayerPerceptronParams(_JavaProbabilisticClassifierParams, HasSeed, H
         Gets the value of layers or its default value.
         """
         return self.getOrDefault(self.layers)
-
-    @since("1.6.0")
-    def getBlockSize(self):
-        """
-        Gets the value of blockSize or its default value.
-        """
-        return self.getOrDefault(self.blockSize)
 
     @since("2.0.0")
     def getInitialWeights(self):
@@ -2201,11 +2199,17 @@ class MultilayerPerceptronClassifier(JavaProbabilisticClassifier, _MultilayerPer
     ...     (1.0, Vectors.dense([0.0, 1.0])),
     ...     (1.0, Vectors.dense([1.0, 0.0])),
     ...     (0.0, Vectors.dense([1.0, 1.0]))], ["label", "features"])
-    >>> mlp = MultilayerPerceptronClassifier(layers=[2, 2, 2], blockSize=1, seed=123)
+    >>> mlp = MultilayerPerceptronClassifier(layers=[2, 2, 2], seed=123)
     >>> mlp.setMaxIter(100)
     MultilayerPerceptronClassifier...
     >>> mlp.getMaxIter()
     100
+    >>> mlp.getBlockSize()
+    128
+    >>> mlp.setBlockSize(1)
+    MultilayerPerceptronClassifier...
+    >>> mlp.getBlockSize()
+    1
     >>> model = mlp.fit(df)
     >>> model.setFeaturesCol("features")
     MultilayerPerceptronClassificationModel...

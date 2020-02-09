@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.{QualifiedTableName, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPartitionException, NoSuchTableException, TempTableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.connector.catalog.SupportsNamespaces.{PROP_OWNER_NAME, PROP_OWNER_TYPE}
+import org.apache.spark.sql.connector.catalog.SupportsNamespaces.PROP_OWNER
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.test.{SharedSparkSession, SQLTestUtils}
@@ -188,7 +188,7 @@ class InMemoryCatalogedDDLSuite extends DDLSuite with SharedSparkSession {
     withTable("t") {
       sql("CREATE TABLE t(i INT) USING parquet")
       val e = intercept[AnalysisException] {
-        sql("ALTER TABLE t ALTER COLUMN i TYPE INT FIRST")
+        sql("ALTER TABLE t ALTER COLUMN i FIRST")
       }
       assert(e.message.contains("ALTER COLUMN ... FIRST | ALTER is only supported with v2 tables"))
     }
@@ -228,7 +228,7 @@ class InMemoryCatalogedDDLSuite extends DDLSuite with SharedSparkSession {
 
 abstract class DDLSuite extends QueryTest with SQLTestUtils {
 
-  protected val reversedProperties = Seq(PROP_OWNER_NAME, PROP_OWNER_TYPE)
+  protected val reversedProperties = Seq(PROP_OWNER)
 
   protected def isUsingHiveMetastore: Boolean = {
     spark.sparkContext.conf.get(CATALOG_IMPLEMENTATION) == "hive"
@@ -795,7 +795,7 @@ abstract class DDLSuite extends QueryTest with SQLTestUtils {
           sql(s"DESCRIBE DATABASE EXTENDED $dbName").toDF("key", "value")
             .where("key not like 'Owner%'"), // filter for consistency with in-memory catalog
           Row("Database Name", dbNameWithoutBackTicks) ::
-            Row("Description", "") ::
+            Row("Comment", "") ::
             Row("Location", CatalogUtils.URIToString(location)) ::
             Row("Properties", "") :: Nil)
 
@@ -805,7 +805,7 @@ abstract class DDLSuite extends QueryTest with SQLTestUtils {
           sql(s"DESCRIBE DATABASE EXTENDED $dbName").toDF("key", "value")
             .where("key not like 'Owner%'"), // filter for consistency with in-memory catalog
           Row("Database Name", dbNameWithoutBackTicks) ::
-            Row("Description", "") ::
+            Row("Comment", "") ::
             Row("Location", CatalogUtils.URIToString(location)) ::
             Row("Properties", "((a,a), (b,b), (c,c))") :: Nil)
 
@@ -815,7 +815,7 @@ abstract class DDLSuite extends QueryTest with SQLTestUtils {
           sql(s"DESCRIBE DATABASE EXTENDED $dbName").toDF("key", "value")
             .where("key not like 'Owner%'"), // filter for consistency with in-memory catalog
           Row("Database Name", dbNameWithoutBackTicks) ::
-            Row("Description", "") ::
+            Row("Comment", "") ::
             Row("Location", CatalogUtils.URIToString(location)) ::
             Row("Properties", "((a,a), (b,b), (c,c), (d,d))") :: Nil)
 
@@ -1786,7 +1786,8 @@ abstract class DDLSuite extends QueryTest with SQLTestUtils {
       column.map(_.metadata).getOrElse(Metadata.empty)
     }
     // Ensure that change column will preserve other metadata fields.
-    sql("ALTER TABLE dbx.tab1 CHANGE COLUMN col1 TYPE INT COMMENT 'this is col1'")
+    sql("ALTER TABLE dbx.tab1 CHANGE COLUMN col1 TYPE INT")
+    sql("ALTER TABLE dbx.tab1 CHANGE COLUMN col1 COMMENT 'this is col1'")
     assert(getMetadata("col1").getString("key") == "value")
     assert(getMetadata("col1").getString("comment") == "this is col1")
   }
@@ -2966,14 +2967,14 @@ abstract class DDLSuite extends QueryTest with SQLTestUtils {
     }
   }
 
-  test("Add a directory when spark.sql.legacy.addDirectory.recursive set to true") {
+  test("Add a directory when spark.sql.legacy.addDirectory.recursive.enabled set to true") {
     val directoryToAdd = Utils.createTempDir("/tmp/spark/addDirectory/")
     val testFile = File.createTempFile("testFile", "1", directoryToAdd)
     spark.sql(s"ADD FILE $directoryToAdd")
     assert(new File(SparkFiles.get(s"${directoryToAdd.getName}/${testFile.getName}")).exists())
   }
 
-  test("Add a directory when spark.sql.legacy.addDirectory.recursive not set to true") {
+  test("Add a directory when spark.sql.legacy.addDirectory.recursive.enabled not set to true") {
     withTempDir { testDir =>
       withSQLConf(SQLConf.LEGACY_ADD_DIRECTORY_USING_RECURSIVE.key -> "false") {
         val msg = intercept[SparkException] {

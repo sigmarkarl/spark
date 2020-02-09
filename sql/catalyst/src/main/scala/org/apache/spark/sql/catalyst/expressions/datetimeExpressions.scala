@@ -33,7 +33,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.Block._
 import org.apache.spark.sql.catalyst.util.{DateTimeUtils, TimestampFormatter}
 import org.apache.spark.sql.catalyst.util.DateTimeConstants._
 import org.apache.spark.sql.catalyst.util.DateTimeUtils._
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
@@ -1153,18 +1152,10 @@ case class TimeAdd(start: Expression, interval: Expression, timeZoneId: Option[S
       > SELECT _FUNC_('2016-08-31', 'Asia/Seoul');
        2016-08-31 09:00:00
   """,
-  since = "1.5.0",
-  deprecated = """
-    Deprecated since 3.0.0. See SPARK-25496.
-  """)
+  since = "1.5.0")
 // scalastyle:on line.size.limit
 case class FromUTCTimestamp(left: Expression, right: Expression)
   extends BinaryExpression with ImplicitCastInputTypes {
-
-  if (!SQLConf.get.utcTimestampFuncEnabled) {
-    throw new AnalysisException(s"The $prettyName function has been disabled since Spark 3.0." +
-      s"Set ${SQLConf.UTC_TIMESTAMP_FUNC_ENABLED.key} to true to enable this function.")
-  }
 
   override def inputTypes: Seq[AbstractDataType] = Seq(TimestampType, StringType)
   override def dataType: DataType = TimestampType
@@ -1185,14 +1176,12 @@ case class FromUTCTimestamp(left: Expression, right: Expression)
            |long ${ev.value} = 0;
          """.stripMargin)
       } else {
-        val tzClass = classOf[TimeZone].getName
+        val tzClass = classOf[ZoneId].getName
         val dtu = DateTimeUtils.getClass.getName.stripSuffix("$")
         val escapedTz = StringEscapeUtils.escapeJava(tz.toString)
         val tzTerm = ctx.addMutableState(tzClass, "tz",
-          v => s"""$v = $dtu.getTimeZone("$escapedTz");""")
-        val utcTerm = "tzUTC"
-        ctx.addImmutableStateIfNotExists(tzClass, utcTerm,
-          v => s"""$v = $dtu.getTimeZone("UTC");""")
+          v => s"""$v = $dtu.getZoneId("$escapedTz");""")
+        val utcTerm = "java.time.ZoneOffset.UTC"
         val eval = left.genCode(ctx)
         ev.copy(code = code"""
            |${eval.code}
@@ -1367,18 +1356,10 @@ case class MonthsBetween(
       > SELECT _FUNC_('2016-08-31', 'Asia/Seoul');
        2016-08-30 15:00:00
   """,
-  since = "1.5.0",
-  deprecated = """
-    Deprecated since 3.0.0. See SPARK-25496.
-  """)
+  since = "1.5.0")
 // scalastyle:on line.size.limit
 case class ToUTCTimestamp(left: Expression, right: Expression)
   extends BinaryExpression with ImplicitCastInputTypes {
-
-  if (!SQLConf.get.utcTimestampFuncEnabled) {
-    throw new AnalysisException(s"The $prettyName function has been disabled since Spark 3.0. " +
-      s"Set ${SQLConf.UTC_TIMESTAMP_FUNC_ENABLED.key} to true to enable this function.")
-  }
 
   override def inputTypes: Seq[AbstractDataType] = Seq(TimestampType, StringType)
   override def dataType: DataType = TimestampType
@@ -1399,14 +1380,12 @@ case class ToUTCTimestamp(left: Expression, right: Expression)
            |long ${ev.value} = 0;
          """.stripMargin)
       } else {
-        val tzClass = classOf[TimeZone].getName
+        val tzClass = classOf[ZoneId].getName
         val dtu = DateTimeUtils.getClass.getName.stripSuffix("$")
         val escapedTz = StringEscapeUtils.escapeJava(tz.toString)
         val tzTerm = ctx.addMutableState(tzClass, "tz",
-          v => s"""$v = $dtu.getTimeZone("$escapedTz");""")
-        val utcTerm = "tzUTC"
-        ctx.addImmutableStateIfNotExists(tzClass, utcTerm,
-          v => s"""$v = $dtu.getTimeZone("UTC");""")
+          v => s"""$v = $dtu.getZoneId("$escapedTz");""")
+        val utcTerm = "java.time.ZoneOffset.UTC"
         val eval = left.genCode(ctx)
         ev.copy(code = code"""
            |${eval.code}

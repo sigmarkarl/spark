@@ -234,13 +234,6 @@ object SQLConf {
     .stringConf
     .createOptional
 
-  val OPTIMIZER_REASSIGN_LAMBDA_VARIABLE_ID =
-    buildConf("spark.sql.optimizer.reassignLambdaVariableID.enabled")
-      .doc("When true, Spark optimizer reassigns per-query unique IDs to LambdaVariable, so that " +
-        "it's more likely to hit codegen cache.")
-    .booleanConf
-    .createWithDefault(true)
-
   val DYNAMIC_PARTITION_PRUNING_ENABLED =
     buildConf("spark.sql.optimizer.dynamicPartitionPruning.enabled")
       .doc("When true, we will generate predicate for partition column when it's used as join key")
@@ -362,6 +355,15 @@ object SQLConf {
 
   val ADAPTIVE_EXECUTION_ENABLED = buildConf("spark.sql.adaptive.enabled")
     .doc("When true, enable adaptive query execution.")
+    .booleanConf
+    .createWithDefault(false)
+
+  val ADAPTIVE_EXECUTION_FORCE_APPLY = buildConf("spark.sql.adaptive.forceApply")
+    .internal()
+    .doc("Adaptive query execution is skipped when the query does not have exchanges or " +
+      "sub-queries. By setting this config to true (together with " +
+      s"'${ADAPTIVE_EXECUTION_ENABLED.key}' enabled), Spark will force apply adaptive query " +
+      "execution for all supported queries.")
     .booleanConf
     .createWithDefault(false)
 
@@ -1060,7 +1062,7 @@ object SQLConf {
     .booleanConf
     .createWithDefault(true)
 
-  val SUBQUERY_REUSE_ENABLED = buildConf("spark.sql.subquery.reuse")
+  val SUBQUERY_REUSE_ENABLED = buildConf("spark.sql.execution.subquery.reuse.enabled")
     .internal()
     .doc("When true, the planner will try to find out duplicated subqueries and re-use them.")
     .booleanConf
@@ -1300,6 +1302,12 @@ object SQLConf {
         "leads to corruptions.")
       .booleanConf
       .createWithDefault(true)
+
+  val FILE_SOURCE_CLEANER_NUM_THREADS =
+    buildConf("spark.sql.streaming.fileSource.cleaner.numThreads")
+      .doc("Number of threads used in the file source completed file cleaner.")
+      .intConf
+      .createWithDefault(1)
 
   val STREAMING_SCHEMA_INFERENCE =
     buildConf("spark.sql.streaming.schemaInference")
@@ -1601,7 +1609,7 @@ object SQLConf {
       .createWithDefault(10000)
 
   val PANDAS_UDF_BUFFER_SIZE =
-    buildConf("spark.sql.pandas.udf.buffer.size")
+    buildConf("spark.sql.execution.pandas.udf.buffer.size")
       .doc(
         s"Same as ${BUFFER_SIZE} but only applies to Pandas UDF executions. If it is not set, " +
         s"the fallback is ${BUFFER_SIZE}. Note that Pandas execution requires more than 4 bytes. " +
@@ -1729,7 +1737,7 @@ object SQLConf {
       "implementation class names for which Data Source V2 code path is disabled. These data " +
       "sources will fallback to Data Source V1 code path.")
     .stringConf
-    .createWithDefault("kafka")
+    .createWithDefault("avro,csv,json,kafka,orc,parquet,text")
 
   val DISABLED_V2_STREAMING_WRITERS = buildConf("spark.sql.streaming.disabledV2Writers")
     .doc("A comma-separated list of fully qualified data source register class names for which" +
@@ -1792,23 +1800,6 @@ object SQLConf {
       .transform(_.toUpperCase(Locale.ROOT))
       .checkValues(StoreAssignmentPolicy.values.map(_.toString))
       .createWithDefault(StoreAssignmentPolicy.ANSI.toString)
-
-  object IntervalStyle extends Enumeration {
-    type IntervalStyle = Value
-    val SQL_STANDARD, ISO_8601, MULTI_UNITS = Value
-  }
-
-  val INTERVAL_STYLE = buildConf("spark.sql.intervalOutputStyle")
-    .doc("When converting interval values to strings (i.e. for display), this config decides the" +
-      " interval string format. The value SQL_STANDARD will produce output matching SQL standard" +
-      " interval literals (i.e. '+3-2 +10 -00:00:01'). The value ISO_8601 will produce output" +
-      " matching the ISO 8601 standard (i.e. 'P3Y2M10DT-1S'). The value MULTI_UNITS (which is the" +
-      " default) will produce output in form of value unit pairs, (i.e. '3 year 2 months 10 days" +
-      " -1 seconds'")
-    .stringConf
-    .transform(_.toUpperCase(Locale.ROOT))
-    .checkValues(IntervalStyle.values.map(_.toString))
-    .createWithDefault(IntervalStyle.MULTI_UNITS.toString)
 
   val ANSI_ENABLED = buildConf("spark.sql.ansi.enabled")
     .doc("When true, Spark tries to conform to the ANSI SQL specification: 1. Spark will " +
@@ -1934,6 +1925,7 @@ object SQLConf {
     .createWithDefault(Deflater.DEFAULT_COMPRESSION)
 
   val LEGACY_SIZE_OF_NULL = buildConf("spark.sql.legacy.sizeOfNull")
+    .internal()
     .doc("If it is set to true, size of null returns -1. This behavior was inherited from Hive. " +
       "The size function returns null for null input if the flag is disabled.")
     .booleanConf
@@ -1941,6 +1933,7 @@ object SQLConf {
 
   val LEGACY_REPLACE_DATABRICKS_SPARK_AVRO_ENABLED =
     buildConf("spark.sql.legacy.replaceDatabricksSparkAvro.enabled")
+      .internal()
       .doc("If it is set to true, the data source provider com.databricks.spark.avro is mapped " +
         "to the built-in but external Avro data source module for backward compatibility.")
       .booleanConf
@@ -1961,6 +1954,15 @@ object SQLConf {
       .internal()
       .doc("When set to true, a literal with an exponent (e.g. 1E-30) would be parsed " +
         "as Decimal rather than Double.")
+      .booleanConf
+      .createWithDefault(false)
+
+  val LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL_ENABLED =
+    buildConf("spark.sql.legacy.allowNegativeScaleOfDecimal.enabled")
+      .internal()
+      .doc("When set to true, negative scale of Decimal type is allowed. For example, " +
+        "the type of number 1E10BD under legacy mode is DecimalType(2, -9), but is " +
+        "Decimal(11, 0) in non legacy mode.")
       .booleanConf
       .createWithDefault(false)
 
@@ -1993,6 +1995,14 @@ object SQLConf {
       .internal()
       .doc("If it is set to true, the parser will treat HAVING without GROUP BY as a normal " +
         "WHERE, which does not follow SQL standard.")
+      .booleanConf
+      .createWithDefault(false)
+
+  val LEGACY_ALLOW_EMPTY_STRING_IN_JSON =
+    buildConf("spark.sql.legacy.json.allowEmptyString.enabled")
+      .internal()
+      .doc("When set to true, the parser of JSON data source treats empty strings as null for " +
+      "some data types such as `IntegerType`.")
       .booleanConf
       .createWithDefault(false)
 
@@ -2047,12 +2057,6 @@ object SQLConf {
     .booleanConf
     .createWithDefault(false)
 
-  val UTC_TIMESTAMP_FUNC_ENABLED = buildConf("spark.sql.legacy.utcTimestampFunc.enabled")
-    .doc("The configuration property enables the to_utc_timestamp() " +
-         "and from_utc_timestamp() functions.")
-    .booleanConf
-    .createWithDefault(false)
-
   val SOURCES_BINARY_FILE_MAX_LENGTH = buildConf("spark.sql.sources.binaryFile.maxLength")
     .doc("The max length of a file that can be read by the binary file data source. " +
       "Spark will fail fast and not attempt to read the file if its length exceeds this value. " +
@@ -2063,10 +2067,11 @@ object SQLConf {
 
   val LEGACY_CAST_DATETIME_TO_STRING =
     buildConf("spark.sql.legacy.typeCoercion.datetimeToString.enabled")
+      .internal()
       .doc("If it is set to true, date/timestamp will cast to string in binary comparisons " +
         "with String")
-    .booleanConf
-    .createWithDefault(false)
+      .booleanConf
+      .createWithDefault(false)
 
   val DEFAULT_CATALOG = buildConf("spark.sql.defaultCatalog")
     .doc("Name of the default catalog. This will be the current catalog if users have not " +
@@ -2086,24 +2091,28 @@ object SQLConf {
       .createOptional
 
   val LEGACY_LOOSE_UPCAST = buildConf("spark.sql.legacy.looseUpcast")
+    .internal()
     .doc("When true, the upcast will be loose and allows string to atomic types.")
     .booleanConf
     .createWithDefault(false)
 
   val LEGACY_CTE_PRECEDENCE_ENABLED = buildConf("spark.sql.legacy.ctePrecedence.enabled")
     .internal()
-    .doc("When true, outer CTE definitions takes precedence over inner definitions.")
+    .doc("When true, outer CTE definitions takes precedence over inner definitions. If set to " +
+      "false, inner CTE definitions take precedence. The default value is empty, " +
+      "AnalysisException is thrown while name conflict is detected in nested CTE.")
     .booleanConf
-    .createWithDefault(false)
+    .createOptional
 
   val LEGACY_ARRAY_EXISTS_FOLLOWS_THREE_VALUED_LOGIC =
     buildConf("spark.sql.legacy.arrayExistsFollowsThreeValuedLogic")
+      .internal()
       .doc("When true, the ArrayExists will follow the three-valued boolean logic.")
       .booleanConf
       .createWithDefault(true)
 
   val ADDITIONAL_REMOTE_REPOSITORIES =
-    buildConf("spark.sql.additionalRemoteRepositories")
+    buildConf("spark.sql.maven.additionalRemoteRepositories")
       .doc("A comma-delimited string config of the optional additional remote Maven mirror " +
         "repositories. This is only used for downloading Hive jars in IsolatedClientLoader " +
         "if the default Maven Central repo is unreachable.")
@@ -2131,11 +2140,13 @@ object SQLConf {
       .booleanConf
       .createWithDefault(false)
 
-  val LEGACY_ADD_DIRECTORY_USING_RECURSIVE = buildConf("spark.sql.legacy.addDirectory.recursive")
-    .doc("When true, users can add directory by passing path of a directory to ADD FILE " +
-      "command of SQL. If false, then only a single file can be added.")
-    .booleanConf
-    .createWithDefault(true)
+  val LEGACY_ADD_DIRECTORY_USING_RECURSIVE =
+    buildConf("spark.sql.legacy.addDirectory.recursive.enabled")
+      .internal()
+      .doc("When true, users can add directory by passing path of a directory to ADD FILE " +
+        "command of SQL. If false, then only a single file can be added.")
+      .booleanConf
+      .createWithDefault(true)
 
   val LEGACY_MSSQLSERVER_NUMERIC_MAPPING_ENABLED =
     buildConf("spark.sql.legacy.mssqlserver.numericMapping.enabled")
@@ -2148,6 +2159,24 @@ object SQLConf {
     .doc("When true, enable filter pushdown to CSV datasource.")
     .booleanConf
     .createWithDefault(true)
+
+  val ADD_PARTITION_BATCH_SIZE =
+    buildConf("spark.sql.addPartitionInBatch.size")
+      .internal()
+      .doc("The number of partitions to be handled in one turn when use " +
+        "`AlterTableAddPartitionCommand` to add partitions into table. The smaller " +
+        "batch size is, the less memory is required for the real handler, e.g. Hive Metastore.")
+      .intConf
+      .checkValue(_ > 0, "The value of spark.sql.addPartitionInBatch.size must be positive")
+      .createWithDefault(100)
+
+  val LEGACY_TIME_PARSER_ENABLED = buildConf("spark.sql.legacy.timeParser.enabled")
+    .internal()
+    .doc("When set to true, java.text.SimpleDateFormat is used for formatting and parsing " +
+      "dates/timestamps in a locale-sensitive manner. When set to false, classes from " +
+      "java.time.* packages are used for the same purpose.")
+    .booleanConf
+    .createWithDefault(false)
 
   /**
    * Holds information about keys that have been deprecated.
@@ -2432,12 +2461,12 @@ class SQLConf extends Serializable with Logging {
 
   def datetimeJava8ApiEnabled: Boolean = getConf(DATETIME_JAVA8API_ENABLED)
 
-  def utcTimestampFuncEnabled: Boolean = getConf(UTC_TIMESTAMP_FUNC_ENABLED)
-
   def addDirectoryRecursiveEnabled: Boolean = getConf(LEGACY_ADD_DIRECTORY_USING_RECURSIVE)
 
   def legacyMsSqlServerNumericMappingEnabled: Boolean =
     getConf(LEGACY_MSSQLSERVER_NUMERIC_MAPPING_ENABLED)
+
+  def legacyTimeParserEnabled: Boolean = getConf(SQLConf.LEGACY_TIME_PARSER_ENABLED)
 
   /**
    * Returns the [[Resolver]] for the current configuration, which can be used to determine if two
@@ -2661,8 +2690,6 @@ class SQLConf extends Serializable with Logging {
   def storeAssignmentPolicy: StoreAssignmentPolicy.Value =
     StoreAssignmentPolicy.withName(getConf(STORE_ASSIGNMENT_POLICY))
 
-  def intervalOutputStyle: IntervalStyle.Value = IntervalStyle.withName(getConf(INTERVAL_STYLE))
-
   def ansiEnabled: Boolean = getConf(ANSI_ENABLED)
 
   def nestedSchemaPruningEnabled: Boolean = getConf(NESTED_SCHEMA_PRUNING_ENABLED)
@@ -2693,6 +2720,9 @@ class SQLConf extends Serializable with Logging {
 
   def exponentLiteralAsDecimalEnabled: Boolean =
     getConf(SQLConf.LEGACY_EXPONENT_LITERAL_AS_DECIMAL_ENABLED)
+
+  def allowNegativeScaleOfDecimalEnabled: Boolean =
+    getConf(SQLConf.LEGACY_ALLOW_NEGATIVE_SCALE_OF_DECIMAL_ENABLED)
 
   def createHiveTableByDefaultEnabled: Boolean =
     getConf(SQLConf.LEGACY_CREATE_HIVE_TABLE_BY_DEFAULT_ENABLED)

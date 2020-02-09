@@ -646,17 +646,18 @@ class DDLParserSuite extends AnalysisTest {
         Some(first())))
   }
 
-  test("alter table: update column type, comment and position") {
-    comparePlans(
-      parsePlan("ALTER TABLE table_name CHANGE COLUMN a.b.c " +
-        "TYPE bigint COMMENT 'new comment' AFTER d"),
-      AlterTableAlterColumnStatement(
-        Seq("table_name"),
-        Seq("a", "b", "c"),
-        Some(LongType),
-        None,
-        Some("new comment"),
-        Some(after("d"))))
+  test("alter table: mutiple property changes are not allowed") {
+    intercept[ParseException] {
+      parsePlan("ALTER TABLE table_name ALTER COLUMN a.b.c " +
+        "TYPE bigint COMMENT 'new comment'")}
+
+    intercept[ParseException] {
+      parsePlan("ALTER TABLE table_name ALTER COLUMN a.b.c " +
+        "TYPE bigint COMMENT AFTER d")}
+
+    intercept[ParseException] {
+      parsePlan("ALTER TABLE table_name ALTER COLUMN a.b.c " +
+        "TYPE bigint COMMENT 'new comment' AFTER d")}
   }
 
   test("alter table: SET/DROP NOT NULL") {
@@ -1341,19 +1342,6 @@ class DDLParserSuite extends AnalysisTest {
       parsePlan("ALTER NAMESPACE a.b.c SET LOCATION '/home/user/db'"),
       AlterNamespaceSetLocation(
         UnresolvedNamespace(Seq("a", "b", "c")), "/home/user/db"))
-  }
-
-  test("set namespace owner") {
-    comparePlans(
-      parsePlan("ALTER DATABASE a.b.c SET OWNER USER user1"),
-      AlterNamespaceSetOwner(UnresolvedNamespace(Seq("a", "b", "c")), "user1", "USER"))
-
-    comparePlans(
-      parsePlan("ALTER DATABASE a.b.c SET OWNER ROLE role1"),
-      AlterNamespaceSetOwner(UnresolvedNamespace(Seq("a", "b", "c")), "role1", "ROLE"))
-    comparePlans(
-      parsePlan("ALTER DATABASE a.b.c SET OWNER GROUP group1"),
-      AlterNamespaceSetOwner(UnresolvedNamespace(Seq("a", "b", "c")), "group1", "GROUP"))
   }
 
   test("show databases: basic") {

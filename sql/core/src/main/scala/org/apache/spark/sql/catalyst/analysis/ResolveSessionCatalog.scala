@@ -17,14 +17,12 @@
 
 package org.apache.spark.sql.catalyst.analysis
 
-import scala.collection.JavaConverters._
-
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType, CatalogUtils}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.connector.catalog.{CatalogManager, CatalogPlugin, Identifier, LookupCatalog, SupportsNamespaces, TableCatalog, TableChange, V1Table}
+import org.apache.spark.sql.connector.catalog.{CatalogManager, CatalogPlugin, CatalogV2Util, Identifier, LookupCatalog, SupportsNamespaces, TableCatalog, TableChange, V1Table}
 import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, RefreshTable}
@@ -79,10 +77,6 @@ class ResolveSessionCatalog(
             throw new AnalysisException(
               "ALTER COLUMN with qualified column is only supported with v2 tables.")
           }
-          if (a.dataType.isEmpty) {
-            throw new AnalysisException(
-              "ALTER COLUMN with v1 tables must specify new data type.")
-          }
           if (a.nullable.isDefined) {
             throw new AnalysisException(
               "ALTER COLUMN with v1 tables cannot specify NOT NULL.")
@@ -94,17 +88,27 @@ class ResolveSessionCatalog(
           val builder = new MetadataBuilder
           // Add comment to metadata
           a.comment.map(c => builder.putString("comment", c))
+          val colName = a.column(0)
+          val dataType = a.dataType.getOrElse {
+            v1Table.schema.findNestedField(Seq(colName), resolver = conf.resolver)
+              .map(_._2.dataType)
+              .getOrElse {
+                throw new AnalysisException(
+                  s"ALTER COLUMN cannot find column ${quote(colName)} in v1 table. " +
+                    s"Available: ${v1Table.schema.fieldNames.mkString(", ")}")
+              }
+          }
           // Add Hive type string to metadata.
-          val cleanedDataType = HiveStringType.replaceCharType(a.dataType.get)
-          if (a.dataType.get != cleanedDataType) {
-            builder.putString(HIVE_TYPE_STRING, a.dataType.get.catalogString)
+          val cleanedDataType = HiveStringType.replaceCharType(dataType)
+          if (dataType != cleanedDataType) {
+            builder.putString(HIVE_TYPE_STRING, dataType.catalogString)
           }
           val newColumn = StructField(
-            a.column(0),
+            colName,
             cleanedDataType,
             nullable = true,
             builder.build())
-          AlterTableChangeColumnCommand(tbl.asTableIdentifier, a.column(0), newColumn)
+          AlterTableChangeColumnCommand(tbl.asTableIdentifier, colName, newColumn)
       }.getOrElse {
         val colName = a.column.toArray
         val typeChange = a.dataType.map { newDataType =>
@@ -326,7 +330,7 @@ class ResolveSessionCatalog(
 
       val comment = c.properties.get(SupportsNamespaces.PROP_COMMENT)
       val location = c.properties.get(SupportsNamespaces.PROP_LOCATION)
-      val newProperties = c.properties -- SupportsNamespaces.RESERVED_PROPERTIES.asScala
+      val newProperties = c.properties -- CatalogV2Util.NAMESPACE_RESERVED_PROPERTIES
       CreateDatabaseCommand(ns.head, c.ifNotExists, location, comment, newProperties)
 
     case d @ DropNamespace(SessionCatalogAndNamespace(_, ns), _, _) =>
@@ -380,9 +384,13 @@ class ResolveSessionCatalog(
         isOverwrite,
         partition)
 
-    case ShowCreateTableStatement(tbl) =>
+    case ShowCreateTableStatement(tbl, asSerde) if !asSerde =>
       val v1TableName = parseV1Table(tbl, "SHOW CREATE TABLE")
       ShowCreateTableCommand(v1TableName.asTableIdentifier)
+
+    case ShowCreateTableStatement(tbl, asSerde) if asSerde =>
+      val v1TableName = parseV1Table(tbl, "SHOW CREATE TABLE AS SERDE")
+      ShowCreateTableAsSerdeCommand(v1TableName.asTableIdentifier)
 
     case CacheTableStatement(tbl, plan, isLazy, options) =>
       val v1TableName = parseV1Table(tbl, "CACHE TABLE")
@@ -582,7 +590,7 @@ class ResolveSessionCatalog(
   }
 
   object SessionCatalogAndNamespace {
-    def unapply(resolved: ResolvedNamespace): Option[(SupportsNamespaces, Seq[String])] =
+    def unapply(resolved: ResolvedNamespace): Option[(CatalogPlugin, Seq[String])] =
       if (isSessionCatalog(resolved.catalog)) {
         Some(resolved.catalog -> resolved.namespace)
       } else {
