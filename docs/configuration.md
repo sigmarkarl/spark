@@ -150,6 +150,7 @@ of the most common options to set are:
   <td>
     Number of cores to use for the driver process, only in cluster mode.
   </td>
+  <td>1.3.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.maxResultSize</code></td>
@@ -176,6 +177,7 @@ of the most common options to set are:
     Instead, please set this through the <code>--driver-memory</code> command line option
     or in your default properties file.
   </td>
+  <td>1.1.1</td>
 </tr>
 <tr>
   <td><code>spark.driver.memoryOverhead</code></td>
@@ -192,6 +194,7 @@ of the most common options to set are:
     driver is determined by the sum of <code>spark.driver.memoryOverhead</code> 
     and <code>spark.driver.memory</code>.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
  <td><code>spark.driver.resource.{resourceName}.amount</code></td>
@@ -234,6 +237,7 @@ of the most common options to set are:
     returns the resource information for that resource. It tries the discovery
     script last if none of the plugins return information for that resource.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.executor.memory</code></td>
@@ -242,6 +246,7 @@ of the most common options to set are:
     Amount of memory to use per executor process, in the same format as JVM memory strings with
     a size unit suffix ("k", "m", "g" or "t") (e.g. <code>512m</code>, <code>2g</code>).
   </td>
+  <td>0.7.0</td>
 </tr>
 <tr>
  <td><code>spark.executor.pyspark.memory</code></td>
@@ -276,6 +281,7 @@ of the most common options to set are:
     <code>spark.executor.memory</code>, <code>spark.memory.offHeap.size</code> and 
     <code>spark.executor.pyspark.memory</code>.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
  <td><code>spark.executor.resource.{resourceName}.amount</code></td>
@@ -384,6 +390,7 @@ of the most common options to set are:
     <code>spark.history.fs.driverlog.cleaner.enabled</code> is true and, if they are older than max age configured
     by setting <code>spark.history.fs.driverlog.cleaner.maxAge</code>.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.log.persistToDfs.enabled</code></td>
@@ -394,6 +401,7 @@ of the most common options to set are:
     will not be persisted. Additionally, enable the cleaner by setting <code>spark.history.fs.driverlog.cleaner.enabled</code>
     to true in <a href="monitoring.html#spark-history-server-configuration-options">Spark History Server</a>.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.log.layout</code></td>
@@ -403,6 +411,7 @@ of the most common options to set are:
     it uses the layout for the first appender defined in log4j.properties. If that is also not configured, driver logs
     use the default layout.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.log.allowErasureCoding</code></td>
@@ -413,6 +422,7 @@ of the most common options to set are:
     written by the application. Note that even if this is true, Spark will still not force the
     file to use erasure coding, it will simply use file system defaults.
   </td>
+  <td>3.0.0</td>
 </tr>
 </table>
 
@@ -433,6 +443,7 @@ Apart from these, the following properties are also available, and may be useful
     Instead, please set this through the <code>--driver-class-path</code> command line option or in
     your default properties file.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.defaultJavaOptions</code></td>
@@ -470,6 +481,7 @@ Apart from these, the following properties are also available, and may be useful
 
     <code>spark.driver.defaultJavaOptions</code> will be prepended to this configuration.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.extraLibraryPath</code></td>
@@ -482,6 +494,7 @@ Apart from these, the following properties are also available, and may be useful
     Instead, please set this through the <code>--driver-library-path</code> command line option or in
     your default properties file.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.driver.userClassPathFirst</code></td>
@@ -493,6 +506,7 @@ Apart from these, the following properties are also available, and may be useful
 
     This is used in cluster mode only.
   </td>
+  <td>1.3.0</td>
 </tr>
 <tr>
   <td><code>spark.executor.extraClassPath</code></td>
@@ -502,6 +516,7 @@ Apart from these, the following properties are also available, and may be useful
     backwards-compatibility with older versions of Spark. Users typically should not need to set
     this option.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.executor.defaultJavaOptions</code></td>
@@ -539,6 +554,7 @@ Apart from these, the following properties are also available, and may be useful
 
     <code>spark.executor.defaultJavaOptions</code> will be prepended to this configuration.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.executor.extraLibraryPath</code></td>
@@ -546,6 +562,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Set a special library path to use when launching executor JVM's.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.executor.logs.rolling.maxRetainedFiles</code></td>
@@ -600,6 +617,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) Same functionality as <code>spark.driver.userClassPathFirst</code>, but
     applied to executor instances.
   </td>
+  <td>1.3.0</td>
 </tr>
 <tr>
   <td><code>spark.executorEnv.[EnvironmentVariableName]</code></td>
@@ -859,6 +877,7 @@ Apart from these, the following properties are also available, and may be useful
     <a href="job-scheduling.html#configuration-and-setup">dynamic allocation
     configuration and setup documentation</a> for more information.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.shuffle.service.port</code></td>
@@ -866,6 +885,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Port on which the external shuffle service will run.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.shuffle.service.index.cache.size</code></td>
@@ -937,6 +957,7 @@ Apart from these, the following properties are also available, and may be useful
     Whether to log events for every block update, if <code>spark.eventLog.enabled</code> is true.
     *Warning*: This will increase the size of the event log considerably.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.longForm.enabled</code></td>
@@ -944,6 +965,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     If true, use the long form of call sites in the event log. Otherwise use the short form.
   </td>
+  <td>2.4.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.compress</code></td>
@@ -951,6 +973,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Whether to compress logged events, if <code>spark.eventLog.enabled</code> is true.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.compression.codec</code></td>
@@ -970,6 +993,7 @@ Apart from these, the following properties are also available, and may be useful
     Note that even if this is true, Spark will still not force the file to use erasure coding, it
     will simply use filesystem defaults.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.dir</code></td>
@@ -980,6 +1004,7 @@ Apart from these, the following properties are also available, and may be useful
     events specific to the application in this directory. Users may want to set this to
     a unified location like an HDFS directory so history files can be read by the history server.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.enabled</code></td>
@@ -988,6 +1013,7 @@ Apart from these, the following properties are also available, and may be useful
     Whether to log Spark events, useful for reconstructing the Web UI after the application has
     finished.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.overwrite</code></td>
@@ -995,6 +1021,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Whether to overwrite any existing files.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.buffer.kb</code></td>
@@ -1002,6 +1029,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Buffer size to use when writing to output streams, in KiB unless otherwise specified.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.rolling.enabled</code></td>
@@ -1010,6 +1038,7 @@ Apart from these, the following properties are also available, and may be useful
     Whether rolling over event log files is enabled. If set to true, it cuts down each event
     log file to the configured size.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.eventLog.rolling.maxFileSize</code></td>
@@ -1017,6 +1046,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     When <code>spark.eventLog.rolling.enabled=true</code>, specifies the max size of event log file before it's rolled over.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.dagGraph.retainedRootRDDs</code></td>
@@ -1024,6 +1054,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     How many DAG graph nodes the Spark UI and status APIs remember before garbage collecting.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.enabled</code></td>
@@ -1031,6 +1062,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Whether to run the web UI for the Spark application.
   </td>
+  <td>1.1.1</td>
 </tr>
 <tr>
   <td><code>spark.ui.killEnabled</code></td>
@@ -1038,6 +1070,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Allows jobs and stages to be killed from the web UI.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.liveUpdate.period</code></td>
@@ -1047,6 +1080,7 @@ Apart from these, the following properties are also available, and may be useful
     meaning only the last write will happen. For live applications, this avoids a few
     operations that we can live without when rapidly processing incoming task events.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.liveUpdate.minFlushPeriod</code></td>
@@ -1055,6 +1089,7 @@ Apart from these, the following properties are also available, and may be useful
     Minimum time elapsed before stale UI data is flushed. This avoids UI staleness when incoming
     task events are not fired frequently.
   </td>
+  <td>2.4.2</td>
 </tr>
 <tr>
   <td><code>spark.ui.port</code></td>
@@ -1062,6 +1097,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Port for your application's dashboard, which shows memory and workload data.
   </td>
+  <td>0.7.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.retainedJobs</code></td>
@@ -1070,6 +1106,7 @@ Apart from these, the following properties are also available, and may be useful
     How many jobs the Spark UI and status APIs remember before garbage collecting.
     This is a target maximum, and fewer elements may be retained in some circumstances.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.retainedStages</code></td>
@@ -1078,6 +1115,7 @@ Apart from these, the following properties are also available, and may be useful
     How many stages the Spark UI and status APIs remember before garbage collecting.
     This is a target maximum, and fewer elements may be retained in some circumstances.
   </td>
+  <td>0.9.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.retainedTasks</code></td>
@@ -1086,6 +1124,7 @@ Apart from these, the following properties are also available, and may be useful
     How many tasks in one stage the Spark UI and status APIs remember before garbage collecting.
     This is a target maximum, and fewer elements may be retained in some circumstances.
   </td>
+  <td>2.0.1</td>
 </tr>
 <tr>
   <td><code>spark.ui.reverseProxy</code></td>
@@ -1093,6 +1132,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Enable running Spark Master as reverse proxy for worker and application UIs. In this mode, Spark master will reverse proxy the worker and application UIs to enable access without requiring direct access to their hosts. Use it with caution, as worker and application UI will not be accessible directly, you will only be able to access them through spark master/proxy public URL. This setting affects all the workers and application UIs running in the cluster and must be set on all the workers, drivers and masters.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.reverseProxyUrl</code></td>
@@ -1100,6 +1140,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     This is the URL where your proxy is running. This URL is for proxy which is running in front of Spark Master. This is useful when running proxy for authentication e.g. OAuth proxy. Make sure this is a complete URL including scheme (http/https) and port to reach your proxy.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.proxyRedirectUri</code></td>
@@ -1112,6 +1153,7 @@ Apart from these, the following properties are also available, and may be useful
     <code>X-Forwarded-Context</code> request header), or by setting the proxy base in the Spark
     app's configuration.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.showConsoleProgress</code></td>
@@ -1123,6 +1165,7 @@ Apart from these, the following properties are also available, and may be useful
     <br/>
     <em>Note:</em> In shell environment, the default value of spark.ui.showConsoleProgress is true.
   </td>
+  <td>1.2.1</td>
 </tr>
 <tr>
   <td><code>spark.ui.custom.executor.log.url</code></td>
@@ -1138,6 +1181,7 @@ Apart from these, the following properties are also available, and may be useful
     <p/>
     For now, only YARN mode supports this configuration
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.worker.ui.retainedExecutors</code></td>
@@ -1175,6 +1219,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     How many dead executors the Spark UI and status APIs remember before garbage collecting.
   </td>
+  <td>2.0.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.filters</code></td>
@@ -1192,6 +1237,7 @@ Apart from these, the following properties are also available, and may be useful
     <br /><code>spark.com.test.filter1.param.name1=foo</code>
     <br /><code>spark.com.test.filter1.param.name2=bar</code>
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.ui.requestHeaderSize</code></td>
@@ -1200,6 +1246,7 @@ Apart from these, the following properties are also available, and may be useful
     The maximum allowed size for a HTTP request header, in bytes unless otherwise specified.
     This setting applies for the Spark History Server too.
   </td>
+  <td>2.2.3</td>
 </tr>
 </table>
 
@@ -1403,6 +1450,7 @@ Apart from these, the following properties are also available, and may be useful
     garbage collection when increasing this value, see
     <a href="tuning.html#memory-management-overview">this description</a>.
   </td>
+  <td>1.6.0</td>
 </tr>
 <tr>
   <td><code>spark.memory.storageFraction</code></td>
@@ -1414,6 +1462,7 @@ Apart from these, the following properties are also available, and may be useful
     Leaving this at the default value is recommended. For more detail, see
     <a href="tuning.html#memory-management-overview">this description</a>.
   </td>
+  <td>1.6.0</td>
 </tr>
 <tr>
   <td><code>spark.memory.offHeap.enabled</code></td>
@@ -1422,6 +1471,7 @@ Apart from these, the following properties are also available, and may be useful
     If true, Spark will attempt to use off-heap memory for certain operations. If off-heap memory 
     use is enabled, then <code>spark.memory.offHeap.size</code> must be positive.
   </td>
+  <td>1.6.0</td>
 </tr>
 <tr>
   <td><code>spark.memory.offHeap.size</code></td>
@@ -1432,6 +1482,7 @@ Apart from these, the following properties are also available, and may be useful
     must fit within some hard limit then be sure to shrink your JVM heap size accordingly.
     This must be set to a positive value when <code>spark.memory.offHeap.enabled=true</code>.
   </td>
+  <td>1.6.0</td>
 </tr>
 <tr>
   <td><code>spark.storage.replication.proactive</code></td>
@@ -1441,6 +1492,7 @@ Apart from these, the following properties are also available, and may be useful
     executor failures are replenished if there are any existing available replicas. This tries
     to get the replication level of the block to the initial number.
   </td>
+  <td>2.2.0</td>
 </tr>
 <tr>
   <td><code>spark.cleaner.periodicGC.interval</code></td>
@@ -1518,6 +1570,7 @@ Apart from these, the following properties are also available, and may be useful
     In standalone and Mesos coarse-grained modes, for more detail, see
     <a href="spark-standalone.html#Executors Scheduling">this description</a>.
   </td>
+  <td>1.0.0</td>
 </tr>
 <tr>
   <td><code>spark.default.parallelism</code></td>
@@ -1537,12 +1590,15 @@ Apart from these, the following properties are also available, and may be useful
   </td>
 </tr>
 <tr>
-    <td><code>spark.executor.heartbeatInterval</code></td>
-    <td>10s</td>
-    <td>Interval between each executor's heartbeats to the driver.  Heartbeats let
+  <td><code>spark.executor.heartbeatInterval</code></td>
+  <td>10s</td>
+  <td>
+    Interval between each executor's heartbeats to the driver.  Heartbeats let
     the driver know that the executor is still alive and update it with metrics for in-progress
     tasks. spark.executor.heartbeatInterval should be significantly less than
-    spark.network.timeout</td>
+    spark.network.timeout
+  </td>
+  <td>1.1.0</td>
 </tr>
 <tr>
   <td><code>spark.files.fetchTimeout</code></td>
@@ -1615,6 +1671,7 @@ Apart from these, the following properties are also available, and may be useful
     unless specified otherwise. This prevents Spark from memory mapping very small blocks. In general, 
     memory mapping has high overhead for blocks close to or below the page size of the operating system.
   </td>
+  <td>0.9.2</td>
 </tr>
 <tr>
   <td><code>spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version</code></td>
@@ -1630,7 +1687,7 @@ Apart from these, the following properties are also available, and may be useful
 ### Executor Metrics
 
 <table class="table">
-<tr><th>Property Name</th><th>Default</th><th>Meaning</th></tr>
+<tr><th>Property Name</th><th>Default</th><th>Meaning</th><th>Since Version</th></tr>
 <tr>
   <td><code>spark.eventLog.logStageExecutorMetrics</code></td>
   <td>false</td>
@@ -1641,6 +1698,7 @@ Apart from these, the following properties are also available, and may be useful
     and this is always done; this configuration is only to determine if aggregated metric peaks
     are written to the event log.
   </td>
+  <td>3.0.0</td>
 </tr>
   <td><code>spark.executor.processTreeMetrics.enabled</code></td>
   <td>false</td>
@@ -1651,6 +1709,7 @@ Apart from these, the following properties are also available, and may be useful
     <em>Note:</em> The process tree metrics are collected only if the /proc filesystem
     exists.
   </td>
+  <td>3.0.0</td>
 <tr>
   <td><code>spark.executor.metrics.pollingInterval</code></td>
   <td>0</td>
@@ -1661,6 +1720,7 @@ Apart from these, the following properties are also available, and may be useful
     specified by <code>spark.executor.heartbeatInterval</code>).
     If positive, the polling is done at this interval.
   </td>
+  <td>3.0.0</td>
 </tr>
 </table>
 
@@ -1844,6 +1904,7 @@ Apart from these, the following properties are also available, and may be useful
     <code>spark.deploy.defaultCores</code> on Spark's standalone cluster manager, or
     infinite (all available cores) on Mesos.
   </td>
+  <td>0.6.0</td>
 </tr>
 <tr>
   <td><code>spark.locality.wait</code></td>
@@ -1856,6 +1917,7 @@ Apart from these, the following properties are also available, and may be useful
     You should increase this setting if your tasks are long and see poor locality, but the
     default usually works well.
   </td>
+  <td>0.5.0</td>
 </tr>
 <tr>
   <td><code>spark.locality.wait.node</code></td>
@@ -1927,6 +1989,7 @@ Apart from these, the following properties are also available, and may be useful
     config. Note that capacity must be greater than 0. Consider increasing value (e.g. 20000) 
     if listener events are dropped. Increasing this value may result in the driver using more memory.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
   <td><code>spark.scheduler.listenerbus.eventqueue.shared.capacity</code></td>
@@ -1991,6 +2054,7 @@ Apart from these, the following properties are also available, and may be useful
     due to too many task failures. The blacklisting algorithm can be further controlled by the
     other "spark.blacklist" configuration options.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.timeout</code></td>
@@ -1999,6 +2063,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) How long a node or executor is blacklisted for the entire application, before it
     is unconditionally removed from the blacklist to attempt running new tasks.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.task.maxTaskAttemptsPerExecutor</code></td>
@@ -2007,6 +2072,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) For a given task, how many times it can be retried on one executor before the
     executor is blacklisted for that task.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.task.maxTaskAttemptsPerNode</code></td>
@@ -2015,6 +2081,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) For a given task, how many times it can be retried on one node, before the entire
     node is blacklisted for that task.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.stage.maxFailedTasksPerExecutor</code></td>
@@ -2023,6 +2090,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) How many different tasks must fail on one executor, within one stage, before the
     executor is blacklisted for that stage.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.stage.maxFailedExecutorsPerNode</code></td>
@@ -2031,6 +2099,7 @@ Apart from these, the following properties are also available, and may be useful
     (Experimental) How many different executors are marked as blacklisted for a given stage, before
     the entire node is marked as failed for the stage.
   </td>
+  <td>2.1.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.application.maxFailedTasksPerExecutor</code></td>
@@ -2042,6 +2111,7 @@ Apart from these, the following properties are also available, and may be useful
     <code>spark.blacklist.timeout</code>.  Note that with dynamic allocation, though, the executors
     may get marked as idle and be reclaimed by the cluster manager.
   </td>
+  <td>2.2.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.application.maxFailedExecutorsPerNode</code></td>
@@ -2053,6 +2123,7 @@ Apart from these, the following properties are also available, and may be useful
     <code>spark.blacklist.timeout</code>.  Note that with dynamic allocation, though, the executors
     on the node may get marked as idle and be reclaimed by the cluster manager.
   </td>
+  <td>2.2.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.killBlacklistedExecutors</code></td>
@@ -2063,6 +2134,7 @@ Apart from these, the following properties are also available, and may be useful
     as controlled by spark.blacklist.application.*. Note that, when an entire node is added 
     to the blacklist, all of the executors on that node will be killed.
   </td>
+  <td>2.2.0</td>
 </tr>
 <tr>
   <td><code>spark.blacklist.application.fetchFailure.enabled</code></td>
@@ -2072,6 +2144,7 @@ Apart from these, the following properties are also available, and may be useful
     failure happens. If external shuffle service is enabled, then the whole node will be
     blacklisted.
   </td>
+  <td>2.3.0</td>
 </tr>
 <tr>
   <td><code>spark.speculation</code></td>
@@ -2122,6 +2195,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Number of cores to allocate for each task.
   </td>
+  <td>0.5.0</td>
 </tr>
 <tr>
   <td><code>spark.task.resource.{resourceName}.amount</code></td>
@@ -2147,6 +2221,7 @@ Apart from these, the following properties are also available, and may be useful
     to fail; a particular task has to fail this number of attempts.
     Should be greater than or equal to 1. Number of allowed retries = this value - 1.
   </td>
+  <td>0.8.0</td>
 </tr>
 <tr>
   <td><code>spark.task.reaper.enabled</code></td>
@@ -2158,6 +2233,7 @@ Apart from these, the following properties are also available, and may be useful
     of this monitoring. When set to false (the default), task killing will use an older code
     path which lacks such monitoring.
   </td>
+  <td>2.0.3</td>
 </tr>
 <tr>
   <td><code>spark.task.reaper.pollingInterval</code></td>
@@ -2169,6 +2245,7 @@ Apart from these, the following properties are also available, and may be useful
     (this thread dump can be disabled via the <code>spark.task.reaper.threadDump</code> setting,
     which is documented below).
   </td>
+  <td>2.0.3</td>
 </tr>
 <tr>
   <td><code>spark.task.reaper.threadDump</code></td>
@@ -2178,6 +2255,7 @@ Apart from these, the following properties are also available, and may be useful
     dumps are logged during periodic polling of killed tasks. Set this to false to disable
     collection of thread dumps.
   </td>
+  <td>2.0.3</td>
 </tr>
 <tr>
   <td><code>spark.task.reaper.killTimeout</code></td>
@@ -2189,6 +2267,7 @@ Apart from these, the following properties are also available, and may be useful
     of this setting is to act as a safety-net to prevent runaway noncancellable tasks from rendering
     an executor unusable.
   </td>
+  <td>2.0.3</td>
 </tr>
 <tr>
   <td><code>spark.stage.maxConsecutiveAttempts</code></td>
@@ -2263,6 +2342,7 @@ Apart from these, the following properties are also available, and may be useful
     <code>spark.dynamicAllocation.initialExecutors</code>
     <code>spark.dynamicAllocation.executorAllocationRatio</code>
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.executorIdleTimeout</code></td>
@@ -2272,6 +2352,7 @@ Apart from these, the following properties are also available, and may be useful
     the executor will be removed. For more detail, see this
     <a href="job-scheduling.html#resource-allocation-policy">description</a>.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.cachedExecutorIdleTimeout</code></td>
@@ -2281,6 +2362,7 @@ Apart from these, the following properties are also available, and may be useful
     the executor will be removed. For more details, see this
     <a href="job-scheduling.html#resource-allocation-policy">description</a>.
   </td>
+  <td>1.4.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.initialExecutors</code></td>
@@ -2291,6 +2373,7 @@ Apart from these, the following properties are also available, and may be useful
     If `--num-executors` (or `spark.executor.instances`) is set and larger than this value, it will
     be used as the initial number of executors.
   </td>
+  <td>1.3.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.maxExecutors</code></td>
@@ -2298,6 +2381,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Upper bound for the number of executors if dynamic allocation is enabled.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.minExecutors</code></td>
@@ -2305,6 +2389,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Lower bound for the number of executors if dynamic allocation is enabled.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.executorAllocationRatio</code></td>
@@ -2322,6 +2407,7 @@ Apart from these, the following properties are also available, and may be useful
     by the <code>spark.dynamicAllocation.minExecutors</code> and
     <code>spark.dynamicAllocation.maxExecutors</code> settings
   </td>
+  <td>2.4.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.schedulerBacklogTimeout</code></td>
@@ -2331,6 +2417,7 @@ Apart from these, the following properties are also available, and may be useful
     this duration, new executors will be requested. For more detail, see this
     <a href="job-scheduling.html#resource-allocation-policy">description</a>.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.sustainedSchedulerBacklogTimeout</code></td>
@@ -2340,6 +2427,7 @@ Apart from these, the following properties are also available, and may be useful
     subsequent executor requests. For more detail, see this
     <a href="job-scheduling.html#resource-allocation-policy">description</a>.
   </td>
+  <td>1.2.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.shuffleTracking.enabled</code></td>
@@ -2349,6 +2437,7 @@ Apart from these, the following properties are also available, and may be useful
     without the need for an external shuffle service. This option will try to keep alive executors
     that are storing shuffle data for active jobs.
   </td>
+  <td>3.0.0</td>
 </tr>
 <tr>
   <td><code>spark.dynamicAllocation.shuffleTimeout</code></td>
@@ -2360,6 +2449,7 @@ Apart from these, the following properties are also available, and may be useful
     quickly enough, this option can be used to control when to time out executors even when they are
     storing shuffle data.
   </td>
+  <td>3.0.0</td>
 </tr>
 </table>
 
