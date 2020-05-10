@@ -1,4 +1,4 @@
-FROM ubuntu:19.04
+FROM ubuntu:20.04
 
 ARG spark_uid=3000
 
@@ -11,8 +11,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYSPARK_DRIVER_PYTHON=/usr/bin/python3 \
     HAIL_DIR=/usr/local/lib/python3.7/dist-packages/hail/
 
-RUN ls
-
 RUN apt -y update && \
     apt install -y locales && \
     locale-gen $LANG && \
@@ -20,7 +18,7 @@ RUN apt -y update && \
     apt install -y build-essential && \
     apt install -y git rsync && \
     apt install -y curl liblz4-dev && \
-    apt install -y tini openjdk-13-jdk-headless && \
+    apt install -y tini openjdk-14-jdk-headless && \
     apt install -y python3 python3-setuptools python3-pip && \
     apt install -y python3-decorator python3-pandas python3-requests python3-numpy python3-scipy
 
@@ -33,18 +31,17 @@ RUN mkdir -p ${SPARK_HOME} && \
     chgrp root /etc/passwd && chmod ug+rw /etc/passwd && \
     rm -rf /var/cache/apt/*
 
-RUN pip3 install parsimonious bokeh
+RUN pip3 install py4j parsimonious bokeh
 
-RUN apt install -y openjdk-12-jdk-headless && \
-    update-alternatives --set java /usr/lib/jvm/java-12-openjdk-amd64/bin/java
+#RUN apt install -y openjdk-12-jdk-headless && \
+#    update-alternatives --set java /usr/lib/jvm/java-12-openjdk-amd64/bin/java
 
-RUN ln -s /usr/lib/jvm/java-12-openjdk-amd64/include /usr/lib/jvm/include && \
-    ln -s /usr/lib/jvm/java-12-openjdk-amd64/lib /usr/lib/jvm/lib
+#RUN ln -s /usr/lib/jvm/java-12-openjdk-amd64/include /usr/lib/jvm/include && \
+#    ln -s /usr/lib/jvm/java-12-openjdk-amd64/lib /usr/lib/jvm/lib
 
-RUN git clone https://github.com/sigmarkarl/hail.git
-
-RUN cd hail/hail && \
-    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=2.4.4
+#RUN git clone https://github.com/sigmarkarl/hail.git && \
+#    cd hail/hail && \
+#    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=2.4.5
 
 RUN apt install -y r-base r-base-dev
 
@@ -57,6 +54,7 @@ COPY jars /opt/spark/jars
 #COPY assembly/target/scala-2.12/jars /opt/spark/jars
 COPY bin /opt/spark/bin
 COPY sbin /opt/spark/sbin
+#COPY entrypoint.sh /opt/
 COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh /opt/
 COPY examples /opt/spark/examples
 COPY resource-managers/kubernetes/integration-tests/tests /opt/spark/tests
@@ -82,15 +80,15 @@ RUN rm -rf /opt/spark/jars/logback-classic-1.2.3.jar
 #RUN rm -rf /opt/spark/jars/breeze-macros_2.12-0.13.2.jar
 
 RUN cp /usr/local/lib/python3.7/dist-packages/hail/hail-all-spark.jar /opt/spark/jars
-RUN update-alternatives --set java /usr/lib/jvm/java-13-openjdk-amd64/bin/java
+#RUN update-alternatives --set java /usr/lib/jvm/java-13-openjdk-amd64/bin/java
 
-COPY slf4j-log4j12-1.7.16.jar /opt/spark/jars/
-COPY log4j-1.2.17.jar /opt/spark/jars/
-COPY spark-repl_2.12-3.0.0-preview2.jar  /opt/spark/jars/
+#COPY slf4j-log4j12-1.7.16.jar /opt/spark/jars/
+#COPY log4j-1.2.17.jar /opt/spark/jars/
+#COPY spark-repl_2.12-3.0.0-preview2.jar  /opt/spark/jars/
 #COPY gorservices-spark-9.6-SNAPSHOT.jar /opt/spark/jars/
 #COPY gor-gortools-8.1-SNAPSHOT.jar /opt/spark/jars/
 #COPY gor-model-8.1-SNAPSHOT.jar /opt/spark/jars/
 
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
-#USER ${spark_uid}
+USER ${spark_uid}

@@ -45,10 +45,10 @@ RUN set -ex && \
 COPY jars /opt/spark/jars
 COPY bin /opt/spark/bin
 COPY sbin /opt/spark/sbin
-COPY kubernetes/dockerfiles/spark/entrypoint.sh /opt/
-COPY kubernetes/dockerfiles/spark/decom.sh /opt/
+COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh /opt/
+COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/decom.sh /opt/
 COPY examples /opt/spark/examples
-COPY kubernetes/tests /opt/spark/tests
+#COPY kubernetes/tests /opt/spark/tests
 COPY data /opt/spark/data
 
 ENV SPARK_HOME /opt/spark
@@ -57,7 +57,19 @@ WORKDIR /opt/spark/work-dir
 RUN chmod g+w /opt/spark/work-dir
 RUN chmod a+x /opt/decom.sh
 
+RUN rm -rf /opt/spark/jars/netty-all-4.0.23.Final.jar
+RUN rm -rf /opt/spark/jars/jetty-6.1.26.jar
+RUN rm -rf /opt/spark/jars/jetty-util-6.1.26.jar
+RUN rm -rf /opt/spark/jars/jersey-client-1.19.jar
+RUN rm -rf /opt/spark/jars/jersey-server-1.19.jar
+RUN rm -rf /opt/spark/jars/log4j-over-slf4j-1.7.30.jar
+RUN rm -rf /opt/spark/jars/kubernetes-client-4.5.2.jar
+RUN rm -rf /opt/spark/jars/kubernetes-model-4.5.2.jar
+RUN rm -rf /opt/spark/jars/kubernetes-model-common-4.5.2.jar
+RUN rm -rf /opt/spark/jars/logback-core-1.2.3.jar
+RUN rm -rf /opt/spark/jars/logback-classic-1.2.3.jar
+
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 # Specify the User that the actual main process will run as
-USER ${spark_uid}
+#USER ${spark_uid}
