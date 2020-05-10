@@ -434,9 +434,10 @@ object SQLConf {
 
   val COALESCE_PARTITIONS_MIN_PARTITION_NUM =
     buildConf("spark.sql.adaptive.coalescePartitions.minPartitionNum")
-      .doc("The minimum number of shuffle partitions after coalescing. If not set, the default " +
-        "value is the default parallelism of the Spark cluster. This configuration only " +
-        s"has an effect when '${ADAPTIVE_EXECUTION_ENABLED.key}' and " +
+      .doc("The suggested (not guaranteed) minimum number of shuffle partitions after " +
+        "coalescing. If not set, the default value is the default parallelism of the " +
+        "Spark cluster. This configuration only has an effect when " +
+        s"'${ADAPTIVE_EXECUTION_ENABLED.key}' and " +
         s"'${COALESCE_PARTITIONS_ENABLED.key}' are both true.")
       .version("3.0.0")
       .intConf
@@ -620,7 +621,7 @@ object SQLConf {
     .stringConf
     .transform(_.toUpperCase(Locale.ROOT))
     .checkValues(ParquetOutputTimestampType.values.map(_.toString))
-    .createWithDefault(ParquetOutputTimestampType.TIMESTAMP_MICROS.toString)
+    .createWithDefault(ParquetOutputTimestampType.INT96.toString)
 
   val PARQUET_COMPRESSION = buildConf("spark.sql.parquet.compression.codec")
     .doc("Sets the compression codec used when writing Parquet files. If either `compression` or " +
@@ -844,8 +845,10 @@ object SQLConf {
     .doc("When true, enable the metadata-only query optimization that use the table's metadata " +
       "to produce the partition columns instead of table scans. It applies when all the columns " +
       "scanned are partition columns and the query has an aggregate operator that satisfies " +
-      "distinct semantics. By default the optimization is disabled, since it may return " +
-      "incorrect results when the files are empty.")
+      "distinct semantics. By default the optimization is disabled, and deprecated as of Spark " +
+      "3.0 since it may return incorrect results when the files are empty, see also SPARK-26709." +
+      "It will be removed in the future releases. If you must use, use 'SparkSessionExtensions' " +
+      "instead to inject it as a custom rule.")
     .version("2.1.1")
     .booleanConf
     .createWithDefault(false)
@@ -1825,7 +1828,7 @@ object SQLConf {
         s"set, the fallback is `${BUFFER_SIZE.key}`. Note that Pandas execution requires more " +
         "than 4 bytes. Lowering this value could make small Pandas UDF batch iterated and " +
         "pipelined; however, it might degrade performance. See SPARK-27870.")
-      .version("3.1.0")
+      .version("3.0.0")
       .fallbackConf(BUFFER_SIZE)
 
   val PANDAS_GROUPED_MAP_ASSIGN_COLUMNS_BY_NAME =
@@ -2062,16 +2065,18 @@ object SQLConf {
       .booleanConf
       .createWithDefault(true)
 
-  val NESTED_PREDICATE_PUSHDOWN_ENABLED =
-    buildConf("spark.sql.optimizer.nestedPredicatePushdown.enabled")
+  val NESTED_PREDICATE_PUSHDOWN_FILE_SOURCE_LIST =
+    buildConf("spark.sql.optimizer.nestedPredicatePushdown.supportedFileSources")
       .internal()
-      .doc("When true, Spark tries to push down predicates for nested columns and or names " +
-        "containing `dots` to data sources. Currently, Parquet implements both optimizations " +
-        "while ORC only supports predicates for names containing `dots`. The other data sources" +
-        "don't support this feature yet.")
+      .doc("A comma-separated list of data source short names or fully qualified data source " +
+        "implementation class names for which Spark tries to push down predicates for nested " +
+        "columns and/or names containing `dots` to data sources. This configuration is only " +
+        "effective with file-based data source in DSv1. Currently, Parquet implements " +
+        "both optimizations while ORC only supports predicates for names containing `dots`. The " +
+        "other data sources don't support this feature yet. So the default value is 'parquet,orc'.")
       .version("3.0.0")
-      .booleanConf
-      .createWithDefault(true)
+      .stringConf
+      .createWithDefault("parquet,orc")
 
   val SERIALIZER_NESTED_SCHEMA_PRUNING_ENABLED =
     buildConf("spark.sql.optimizer.serializer.nestedSchemaPruning.enabled")
@@ -2335,6 +2340,17 @@ object SQLConf {
     .booleanConf
     .createWithDefault(false)
 
+  val UI_EXPLAIN_MODE = buildConf("spark.sql.ui.explainMode")
+    .doc("Configures the query explain mode used in the Spark SQL UI. The value can be 'simple', " +
+      "'extended', 'codegen', 'cost', or 'formatted'. The default value is 'formatted'.")
+    .version("3.1.0")
+    .stringConf
+    .transform(_.toUpperCase(Locale.ROOT))
+    .checkValue(mode => Set("SIMPLE", "EXTENDED", "CODEGEN", "COST", "FORMATTED").contains(mode),
+      "Invalid value for 'spark.sql.ui.explainMode'. Valid values are 'simple', 'extended', " +
+      "'codegen', 'cost' and 'formatted'.")
+    .createWithDefault("formatted")
+
   val SOURCES_BINARY_FILE_MAX_LENGTH = buildConf("spark.sql.sources.binaryFile.maxLength")
     .doc("The max length of a file that can be read by the binary file data source. " +
       "Spark will fail fast and not attempt to read the file if its length exceeds this value. " +
@@ -2508,14 +2524,27 @@ object SQLConf {
     buildConf("spark.sql.legacy.integerGroupingId")
       .internal()
       .doc("When true, grouping_id() returns int values instead of long values.")
+      .version("3.1.0")
       .booleanConf
       .createWithDefault(false)
 
-  val LEGACY_PARQUET_REBASE_DATETIME =
-    buildConf("spark.sql.legacy.parquet.rebaseDateTime.enabled")
+  val LEGACY_PARQUET_REBASE_DATETIME_IN_WRITE =
+    buildConf("spark.sql.legacy.parquet.rebaseDateTimeInWrite.enabled")
       .internal()
       .doc("When true, rebase dates/timestamps from Proleptic Gregorian calendar " +
-        "to the hybrid calendar (Julian + Gregorian) in write and " +
+        "to the hybrid calendar (Julian + Gregorian) in write. " +
+        "The rebasing is performed by converting micros/millis/days to " +
+        "a local date/timestamp in the source calendar, interpreting the resulted date/" +
+        "timestamp in the target calendar, and getting the number of micros/millis/days " +
+        "since the epoch 1970-01-01 00:00:00Z.")
+      .version("3.0.0")
+      .booleanConf
+      .createWithDefault(false)
+
+  val LEGACY_PARQUET_REBASE_DATETIME_IN_READ =
+    buildConf("spark.sql.legacy.parquet.rebaseDateTimeInRead.enabled")
+      .internal()
+      .doc("When true, rebase dates/timestamps " +
         "from the hybrid calendar to Proleptic Gregorian calendar in read. " +
         "The rebasing is performed by converting micros/millis/days to " +
         "a local date/timestamp in the source calendar, interpreting the resulted date/" +
@@ -2525,11 +2554,23 @@ object SQLConf {
       .booleanConf
       .createWithDefault(false)
 
-  val LEGACY_AVRO_REBASE_DATETIME =
-    buildConf("spark.sql.legacy.avro.rebaseDateTime.enabled")
+  val LEGACY_AVRO_REBASE_DATETIME_IN_WRITE =
+    buildConf("spark.sql.legacy.avro.rebaseDateTimeInWrite.enabled")
       .internal()
       .doc("When true, rebase dates/timestamps from Proleptic Gregorian calendar " +
-        "to the hybrid calendar (Julian + Gregorian) in write and " +
+        "to the hybrid calendar (Julian + Gregorian) in write. " +
+        "The rebasing is performed by converting micros/millis/days to " +
+        "a local date/timestamp in the source calendar, interpreting the resulted date/" +
+        "timestamp in the target calendar, and getting the number of micros/millis/days " +
+        "since the epoch 1970-01-01 00:00:00Z.")
+      .version("3.0.0")
+      .booleanConf
+      .createWithDefault(false)
+
+  val LEGACY_AVRO_REBASE_DATETIME_IN_READ =
+    buildConf("spark.sql.legacy.avro.rebaseDateTimeInRead.enabled")
+      .internal()
+      .doc("When true, rebase dates/timestamps " +
         "from the hybrid calendar to Proleptic Gregorian calendar in read. " +
         "The rebasing is performed by converting micros/millis/days to " +
         "a local date/timestamp in the source calendar, interpreting the resulted date/" +
@@ -2568,7 +2609,10 @@ object SQLConf {
       DeprecatedConfig(ARROW_FALLBACK_ENABLED.key, "3.0",
         s"Use '${ARROW_PYSPARK_FALLBACK_ENABLED.key}' instead of it."),
       DeprecatedConfig(SHUFFLE_TARGET_POSTSHUFFLE_INPUT_SIZE.key, "3.0",
-        s"Use '${ADVISORY_PARTITION_SIZE_IN_BYTES.key}' instead of it.")
+        s"Use '${ADVISORY_PARTITION_SIZE_IN_BYTES.key}' instead of it."),
+      DeprecatedConfig(OPTIMIZER_METADATA_ONLY.key, "3.0",
+        "Avoid to depend on this optimization to prevent a potential correctness issue. " +
+          "If you must use, use 'SparkSessionExtensions' instead to inject it as a custom rule.")
     )
 
     Map(configs.map { cfg => cfg.key -> cfg } : _*)
@@ -2824,6 +2868,8 @@ class SQLConf extends Serializable with Logging {
 
   def datetimeJava8ApiEnabled: Boolean = getConf(DATETIME_JAVA8API_ENABLED)
 
+  def uiExplainMode: String = getConf(UI_EXPLAIN_MODE)
+
   def addSingleFileInAddFile: Boolean = getConf(LEGACY_ADD_SINGLE_FILE_IN_ADD_FILE)
 
   def legacyMsSqlServerNumericMappingEnabled: Boolean =
@@ -3059,8 +3105,6 @@ class SQLConf extends Serializable with Logging {
 
   def nestedSchemaPruningEnabled: Boolean = getConf(NESTED_SCHEMA_PRUNING_ENABLED)
 
-  def nestedPredicatePushdownEnabled: Boolean = getConf(NESTED_PREDICATE_PUSHDOWN_ENABLED)
-
   def serializerNestedSchemaPruningEnabled: Boolean =
     getConf(SERIALIZER_NESTED_SCHEMA_PRUNING_ENABLED)
 
@@ -3118,9 +3162,9 @@ class SQLConf extends Serializable with Logging {
 
   def integerGroupingIdEnabled: Boolean = getConf(SQLConf.LEGACY_INTEGER_GROUPING_ID)
 
-  def parquetRebaseDateTimeEnabled: Boolean = getConf(SQLConf.LEGACY_PARQUET_REBASE_DATETIME)
-
-  def avroRebaseDateTimeEnabled: Boolean = getConf(SQLConf.LEGACY_AVRO_REBASE_DATETIME)
+  def parquetRebaseDateTimeInReadEnabled: Boolean = {
+    getConf(SQLConf.LEGACY_PARQUET_REBASE_DATETIME_IN_READ)
+  }
 
   /** ********************** SQLConf functionality methods ************ */
 

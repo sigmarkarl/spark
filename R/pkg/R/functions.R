@@ -2975,7 +2975,7 @@ setMethod("lpad", signature(x = "Column", len = "numeric", pad = "character"),
 
 #' @details
 #' \code{rand}: Generates a random column with independent and identically distributed (i.i.d.)
-#' samples from U[0.0, 1.0].
+#' samples uniformly distributed in [0.0, 1.0).
 #' Note: the function is non-deterministic in general case.
 #'
 #' @rdname column_nonaggregate_functions
@@ -3951,7 +3951,6 @@ setMethod("map_values",
 #' @rdname column_collection_functions
 #' @aliases map_zip_with map_zip_with,characterOrColumn,characterOrColumn,function-method
 #'
-#' @examples
 #' @note map_zip_with since 3.1.0
 setMethod("map_zip_with",
           signature(x = "characterOrColumn", y = "characterOrColumn", f = "function"),
