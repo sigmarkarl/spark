@@ -72,4 +72,4 @@ RUN rm -rf /opt/spark/jars/logback-classic-1.2.3.jar
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 # Specify the User that the actual main process will run as
-#USER ${spark_uid}
+USER ${spark_uid}:${spark_uid}

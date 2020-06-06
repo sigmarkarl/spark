@@ -124,10 +124,6 @@ select to_timestamp("12.1234019-10-06S10:11", "ss.SSSSy-MM-dd'S'HH:mm");
 select to_timestamp("2019-10-06S", "yyyy-MM-dd'S'");
 select to_timestamp("S2019-10-06", "'S'yyyy-MM-dd");
 
-select date_format(timestamp '2019-10-06', 'yyyy-MM-dd uuee');
-select date_format(timestamp '2019-10-06', 'yyyy-MM-dd uucc');
-select date_format(timestamp '2019-10-06', 'yyyy-MM-dd uuuu');
-
 select to_timestamp("2019-10-06T10:11:12'12", "yyyy-MM-dd'T'HH:mm:ss''SSSS"); -- middle
 select to_timestamp("2019-10-06T10:11:12'", "yyyy-MM-dd'T'HH:mm:ss''"); -- tail
 select to_timestamp("'2019-10-06T10:11:12", "''yyyy-MM-dd'T'HH:mm:ss"); -- head
@@ -160,3 +156,7 @@ select from_json('{"time":"26/October/2015"}', 'time Timestamp', map('timestampF
 select from_json('{"date":"26/October/2015"}', 'date Date', map('dateFormat', 'dd/MMMMM/yyyy'));
 select from_csv('26/October/2015', 'time Timestamp', map('timestampFormat', 'dd/MMMMM/yyyy'));
 select from_csv('26/October/2015', 'date Date', map('dateFormat', 'dd/MMMMM/yyyy'));
+
+select from_unixtime(1, 'yyyyyyyyyyy-MM-dd');
+select date_format(timestamp '2018-11-17 13:33:33', 'yyyyyyyyyy-MM-dd HH:mm:ss');
+select date_format(date '2018-11-17', 'yyyyyyyyyyy-MM-dd');

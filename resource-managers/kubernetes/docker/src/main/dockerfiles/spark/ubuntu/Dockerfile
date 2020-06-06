@@ -33,15 +33,15 @@ RUN mkdir -p ${SPARK_HOME} && \
 
 RUN pip3 install py4j parsimonious bokeh
 
-#RUN apt install -y openjdk-12-jdk-headless && \
-#    update-alternatives --set java /usr/lib/jvm/java-12-openjdk-amd64/bin/java
+RUN apt install -y openjdk-11-jdk-headless && \
+    update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
 
-#RUN ln -s /usr/lib/jvm/java-12-openjdk-amd64/include /usr/lib/jvm/include && \
-#    ln -s /usr/lib/jvm/java-12-openjdk-amd64/lib /usr/lib/jvm/lib
+RUN ln -s /usr/lib/jvm/java-11-openjdk-amd64/include /usr/lib/jvm/include && \
+    ln -s /usr/lib/jvm/java-11-openjdk-amd64/lib /usr/lib/jvm/lib
 
-#RUN git clone https://github.com/sigmarkarl/hail.git && \
-#    cd hail/hail && \
-#    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=2.4.5
+RUN git clone https://github.com/sigmarkarl/hail.git && \
+    cd hail/hail && \
+    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=3.0.0-preview2
 
 RUN apt install -y r-base r-base-dev
 
@@ -79,8 +79,8 @@ RUN rm -rf /opt/spark/jars/logback-classic-1.2.3.jar
 #RUN rm -rf /opt/spark/jars/breeze_2.12-0.13.2.jar
 #RUN rm -rf /opt/spark/jars/breeze-macros_2.12-0.13.2.jar
 
-RUN cp /usr/local/lib/python3.7/dist-packages/hail/hail-all-spark.jar /opt/spark/jars
-#RUN update-alternatives --set java /usr/lib/jvm/java-13-openjdk-amd64/bin/java
+RUN cp /usr/local/lib/python3.8/dist-packages/hail/backend/hail-all-spark.jar /opt/spark/jars
+RUN update-alternatives --set java /usr/lib/jvm/java-14-openjdk-amd64/bin/java
 
 #COPY slf4j-log4j12-1.7.16.jar /opt/spark/jars/
 #COPY log4j-1.2.17.jar /opt/spark/jars/
