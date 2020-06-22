@@ -58,27 +58,22 @@ fi
 
 # If HADOOP_HOME is set and SPARK_DIST_CLASSPATH is not set, set it here so Hadoop jars are available to the executor.
 # It does not set SPARK_DIST_CLASSPATH if already set, to avoid overriding customizations of this value from elsewhere e.g. Docker/K8s.
-#if [ -n "${HADOOP_HOME}"  ] && [ -z "${SPARK_DIST_CLASSPATH}"  ]; then
-#  export SPARK_DIST_CLASSPATH="$($HADOOP_HOME/bin/hadoop classpath)"
-#fi
+if [ -n "${HADOOP_HOME}"  ] && [ -z "${SPARK_DIST_CLASSPATH}"  ]; then
+  export SPARK_DIST_CLASSPATH="$($HADOOP_HOME/bin/hadoop classpath)"
+fi
 
 if ! [ -z ${HADOOP_CONF_DIR+x} ]; then
   SPARK_CLASSPATH="$HADOOP_CONF_DIR:$SPARK_CLASSPATH";
 fi
 
-PYSPARK_ARGS=""
-if [ -n "$PYSPARK_APP_ARGS" ]; then
-    PYSPARK_ARGS="$PYSPARK_APP_ARGS"
-fi
-
 case "$1" in
-  driver | driver-py)
+  driver)
     shift 1
     CMD=(
       "$SPARK_HOME/bin/spark-submit"
       --conf "spark.driver.bindAddress=$SPARK_DRIVER_BIND_ADDRESS"
       --deploy-mode client
-      "$@" $PYSPARK_PRIMARY $PYSPARK_ARGS
+      "$@"
     )
     ;;
   executor)

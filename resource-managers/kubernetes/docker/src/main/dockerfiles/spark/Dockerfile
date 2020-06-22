@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-ARG java_image_tag=8-jre-slim
+ARG java_image_tag=14-slim
 
 FROM openjdk:${java_image_tag}
 
@@ -63,13 +63,32 @@ RUN rm -rf /opt/spark/jars/jetty-util-6.1.26.jar
 RUN rm -rf /opt/spark/jars/jersey-client-1.19.jar
 RUN rm -rf /opt/spark/jars/jersey-server-1.19.jar
 RUN rm -rf /opt/spark/jars/log4j-over-slf4j-1.7.30.jar
+#RUN rm -rf /opt/spark/jars/slf4j-api-1.7.30.jar
 RUN rm -rf /opt/spark/jars/kubernetes-client-4.5.2.jar
 RUN rm -rf /opt/spark/jars/kubernetes-model-4.5.2.jar
 RUN rm -rf /opt/spark/jars/kubernetes-model-common-4.5.2.jar
 RUN rm -rf /opt/spark/jars/logback-core-1.2.3.jar
 RUN rm -rf /opt/spark/jars/logback-classic-1.2.3.jar
 
+#RUN rm -rf /opt/spark/jars/hadoop-auth-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-annotations-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-common-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-hdfs-client-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-core-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-yarn-api-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-yarn-client-3.2.1.jar
+#RUN rm -rf /opt/spark/jars/hadoop-yarn-common-3.2.1.jar
+
+RUN rm -rf /opt/spark/jars/hadoop-client-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-app-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-common-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-jobclient-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-shuffle-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-yarn-server-common-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-yarn-server-nodemanager-2.7.4.jar
+RUN rm -rf /opt/spark/jars/hadoop-hdfs-2.7.4.jar
+
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 # Specify the User that the actual main process will run as
-USER ${spark_uid}:${spark_uid}
+USER ${spark_uid}
