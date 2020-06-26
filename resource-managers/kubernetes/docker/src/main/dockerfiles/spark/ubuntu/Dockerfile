@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     R_HOME=/usr/lib/R \
     PYSPARK_PYTHON=/usr/bin/python3 \
     PYSPARK_DRIVER_PYTHON=/usr/bin/python3 \
-    HAIL_DIR=/usr/local/lib/python3.7/dist-packages/hail/
+    HAIL_DIR=/usr/local/lib/python3.8/dist-packages/hail/
 
 RUN apt -y update && \
     apt install -y locales && \
@@ -41,7 +41,7 @@ RUN ln -s /usr/lib/jvm/java-11-openjdk-amd64/include /usr/lib/jvm/include && \
 
 RUN git clone https://github.com/sigmarkarl/hail.git && \
     cd hail/hail && \
-    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=3.0.0-preview2
+    make install-on-cluster HAIL_COMPILE_NATIVES=1 SPARK_VERSION=3.0.0
 
 RUN apt install -y r-base r-base-dev
 
