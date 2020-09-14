@@ -279,6 +279,9 @@ private[spark] class ExecutorAllocationManager(
     numExecutorsTargetPerResourceProfileId.keys.foreach { rpId =>
       numExecutorsTargetPerResourceProfileId(rpId) = initialNumExecutors
     }
+    numExecutorsToAddPerResourceProfileId.keys.foreach { rpId =>
+      numExecutorsToAddPerResourceProfileId(rpId) = 1
+    }
     executorMonitor.reset()
   }
 
@@ -577,7 +580,7 @@ private[spark] class ExecutorAllocationManager(
       // when the task backlog decreased.
       if (decommissionEnabled) {
         val executorIdsWithoutHostLoss = executorIdsToBeRemoved.toSeq.map(
-          id => (id, ExecutorDecommissionInfo("spark scale down", false))).toArray
+          id => (id, ExecutorDecommissionInfo("spark scale down"))).toArray
         client.decommissionExecutors(executorIdsWithoutHostLoss, adjustTargetNumExecutors = false)
       } else {
         client.killExecutors(executorIdsToBeRemoved.toSeq, adjustTargetNumExecutors = false,
