@@ -15,10 +15,9 @@
 # limitations under the License.
 #
 ARG java_image_tag=14-slim
+ARG spark_uid=3000
 
 FROM openjdk:${java_image_tag}
-
-ARG spark_uid=185
 
 # Before building the docker image, first build and make a Spark distribution following
 # the instructions in http://spark.apache.org/docs/latest/building-spark.html.
@@ -47,7 +46,7 @@ COPY bin /opt/spark/bin
 COPY sbin /opt/spark/sbin
 COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh /opt/
 COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/decom.sh /opt/
-COPY examples /opt/spark/examples
+#COPY examples /opt/spark/examples
 #COPY kubernetes/tests /opt/spark/tests
 COPY data /opt/spark/data
 
@@ -87,6 +86,8 @@ RUN rm -rf /opt/spark/jars/hadoop-mapreduce-client-shuffle-2.7.4.jar
 RUN rm -rf /opt/spark/jars/hadoop-yarn-server-common-2.7.4.jar
 RUN rm -rf /opt/spark/jars/hadoop-yarn-server-nodemanager-2.7.4.jar
 RUN rm -rf /opt/spark/jars/hadoop-hdfs-2.7.4.jar
+
+RUN apt install -y ncbi-blast+
 
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 

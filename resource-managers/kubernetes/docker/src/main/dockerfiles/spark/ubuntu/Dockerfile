@@ -61,9 +61,14 @@ COPY examples /opt/spark/examples
 COPY resource-managers/kubernetes/integration-tests/tests /opt/spark/tests
 COPY data /opt/spark/data
 
+COPY glow.py-0.6.1-py3-none-any.whl /
+RUN python3 -m pip install glow.py-0.6.1-py3-none-any.whl
+COPY glow-spark3-assembly-0.6.1-SNAPSHOT.jar /opt/spark/jars/
+
 WORKDIR /opt/spark/work-dir 
 RUN chmod g+w /opt/spark/work-dir
 
+RUN rm -rf /opt/spark/jars/glow-spark3_2.12-0.6.0.jar
 RUN rm -rf /opt/spark/jars/netty-all-4.0.23.Final.jar
 RUN rm -rf /opt/spark/jars/jetty-6.1.26.jar
 RUN rm -rf /opt/spark/jars/jetty-util-6.1.26.jar
